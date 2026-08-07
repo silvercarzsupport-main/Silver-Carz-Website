@@ -6,6 +6,7 @@ const STEPS = [
   { number: 3, title: 'Your Details', caption: 'Contact info' },
   { number: 4, title: 'Documents', caption: 'Upload ID docs' },
   { number: 5, title: 'Request Submitted', caption: 'Awaiting approval' },
+  { number: 6, title: 'Payment', caption: 'Secure checkout' },
 ] as const;
 
 /**

@@ -14,6 +14,8 @@ export type VehicleAvailabilityStatus = Enums<'vehicle_availability'>;
 export type RentalMode = Enums<'rental_mode'>;
 export type PaymentMethod = Enums<'payment_method'>;
 export type BookingStatus = Enums<'booking_status'>;
+export type PaymentProvider = Enums<'payment_provider'>;
+export type BookingPaymentStatus = Enums<'booking_payment_status'>;
 
 /** Application RBAC role — same values as `public.app_role`. */
 export type UserRole = Enums<'app_role'>;
@@ -172,6 +174,37 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   denied: 'Denied',
 };
 
+export const PAYMENT_PROVIDERS = {
+  razorpay: 'razorpay',
+} as const satisfies Record<string, PaymentProvider>;
+
+export const PAYMENT_PROVIDER_VALUES = [PAYMENT_PROVIDERS.razorpay] as const;
+
+export const PAYMENT_PROVIDER_LABELS: Record<PaymentProvider, string> = {
+  razorpay: 'Razorpay',
+};
+
+export const BOOKING_PAYMENT_STATUSES = {
+  pending: 'pending',
+  failed: 'failed',
+  cancelled: 'cancelled',
+  paid: 'paid',
+} as const satisfies Record<string, BookingPaymentStatus>;
+
+export const BOOKING_PAYMENT_STATUS_VALUES = [
+  BOOKING_PAYMENT_STATUSES.pending,
+  BOOKING_PAYMENT_STATUSES.failed,
+  BOOKING_PAYMENT_STATUSES.cancelled,
+  BOOKING_PAYMENT_STATUSES.paid,
+] as const;
+
+export const BOOKING_PAYMENT_STATUS_LABELS: Record<BookingPaymentStatus, string> = {
+  pending: 'Pending',
+  failed: 'Failed',
+  cancelled: 'Cancelled',
+  paid: 'Paid',
+};
+
 /**
  * Role constants live in `@/lib/auth/roles` (used by RBAC helpers).
  * Re-exported here so domain code can import enums from one place.
@@ -226,6 +259,8 @@ const VEHICLE_AVAILABILITY_STATUS_SET = new Set<string>(VEHICLE_AVAILABILITY_STA
 const RENTAL_MODE_SET = new Set<string>(RENTAL_MODE_VALUES);
 const PAYMENT_METHOD_SET = new Set<string>(PAYMENT_METHOD_VALUES);
 const BOOKING_STATUS_SET = new Set<string>(BOOKING_STATUS_VALUES);
+const PAYMENT_PROVIDER_SET = new Set<string>(PAYMENT_PROVIDER_VALUES);
+const BOOKING_PAYMENT_STATUS_SET = new Set<string>(BOOKING_PAYMENT_STATUS_VALUES);
 
 export function isFuelType(value: unknown): value is FuelType {
   return typeof value === 'string' && FUEL_TYPE_SET.has(value);
@@ -253,4 +288,12 @@ export function isPaymentMethod(value: unknown): value is PaymentMethod {
 
 export function isBookingStatus(value: unknown): value is BookingStatus {
   return typeof value === 'string' && BOOKING_STATUS_SET.has(value);
+}
+
+export function isPaymentProvider(value: unknown): value is PaymentProvider {
+  return typeof value === 'string' && PAYMENT_PROVIDER_SET.has(value);
+}
+
+export function isBookingPaymentStatus(value: unknown): value is BookingPaymentStatus {
+  return typeof value === 'string' && BOOKING_PAYMENT_STATUS_SET.has(value);
 }

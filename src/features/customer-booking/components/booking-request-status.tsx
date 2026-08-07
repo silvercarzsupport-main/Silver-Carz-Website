@@ -4,7 +4,7 @@ import { Ban, CheckCircle2, CircleDashed } from 'lucide-react';
 import { BookingProgressSteps } from '@/components/customer/book-a-car/booking-progress-steps';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
 import { Button } from '@/components/ui/button';
-import { ROUTES } from '@/constants/routes';
+import { customerBookingPaymentPath, ROUTES } from '@/constants/routes';
 import { SelectedVehicleSummary } from '@/features/customer-booking/components/selected-vehicle-summary';
 import { calculateRentalDays } from '@/features/customer-booking/lib/estimate';
 import {
@@ -70,7 +70,9 @@ export function BookingRequestStatus({ booking }: BookingRequestStatusProps) {
               {status.description}
             </p>
             {status.paymentAvailable ? (
-              <p className="mt-3 text-sm font-semibold text-success">Payment is now available.</p>
+              <p className="mt-3 text-sm font-semibold text-success">
+                Your booking has been approved. Payment is required.
+              </p>
             ) : null}
           </div>
         </div>
@@ -156,9 +158,22 @@ export function BookingRequestStatus({ booking }: BookingRequestStatusProps) {
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
+          {status.paymentAvailable ? (
+            <Button
+              asChild
+              className="h-11 rounded-md bg-primary font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary/90"
+            >
+              <Link href={customerBookingPaymentPath(booking.id)}>Pay now</Link>
+            </Button>
+          ) : null}
           <Button
             asChild
-            className="h-11 rounded-md bg-primary font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary/90"
+            variant={status.paymentAvailable ? 'outline' : 'default'}
+            className={
+              status.paymentAvailable
+                ? 'h-11 rounded-md border-secondary text-secondary'
+                : 'h-11 rounded-md bg-primary font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary/90'
+            }
           >
             <Link href={ROUTES.myBookings}>My bookings</Link>
           </Button>

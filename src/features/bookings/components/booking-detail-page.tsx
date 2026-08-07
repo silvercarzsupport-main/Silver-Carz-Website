@@ -26,12 +26,15 @@ import {
 import { VehicleThumbnail } from '@/features/vehicles/components/vehicle-thumbnail';
 import { formatCurrency, formatDate, formatDateTime, formatNumber } from '@/lib/format';
 import {
+  BOOKING_PAYMENT_STATUS_LABELS,
   BOOKING_STATUSES,
   FUEL_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
+  PAYMENT_PROVIDER_LABELS,
   RENTAL_MODE_LABELS,
   type BookingDocumentSummary,
   type BookingWithVehicle,
+  type PaymentSummary,
 } from '@/types';
 
 type BookingDetailPageProps = {
@@ -39,6 +42,7 @@ type BookingDetailPageProps = {
   readonly createdByLabel?: string | null;
   readonly customerEmail?: string | null;
   readonly documents?: readonly BookingDocumentSummary[];
+  readonly payments?: readonly PaymentSummary[];
   readonly loadError?: string;
 };
 
@@ -60,6 +64,7 @@ export function BookingDetailPage({
   createdByLabel,
   customerEmail,
   documents = [],
+  payments = [],
   loadError,
 }: BookingDetailPageProps) {
   if (loadError || !booking) {
@@ -120,14 +125,18 @@ export function BookingDetailPage({
     statusPresentation.status === BOOKING_DISPLAY_STATUSES.upcoming ||
     statusPresentation.status === BOOKING_DISPLAY_STATUSES.active ||
     statusPresentation.status === BOOKING_DISPLAY_STATUSES.completed;
+  const hasPaidOnline = payments.some((payment) => payment.status === 'paid');
+  const hasPendingOnline = payments.some((payment) => payment.status === 'pending');
   const paymentAvailabilityLabel =
-    isScheduleBooking && Number(booking.booking_amount) <= 0
-      ? 'Available'
-      : isScheduleBooking
-        ? 'Collected'
-        : isDenied
-          ? 'Not payable'
-          : '—';
+    isScheduleBooking && (Number(booking.booking_amount) > 0 || hasPaidOnline)
+      ? 'Collected'
+      : isScheduleBooking && hasPendingOnline
+        ? 'Payment pending'
+        : isScheduleBooking && Number(booking.booking_amount) <= 0
+          ? 'Available'
+          : isDenied
+            ? 'Not payable'
+            : '—';
 
   return (
     <PageContainer className="max-w-5xl">
@@ -327,6 +336,39 @@ export function BookingDetailPage({
               }
             />
           </dl>
+
+          {payments.length > 0 ? (
+            <div className="mt-5 border-t pt-4">
+              <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Online payment attempts
+              </p>
+              <ul className="space-y-2">
+                {payments.map((payment) => (
+                  <li
+                    key={payment.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium">
+                        {PAYMENT_PROVIDER_LABELS[payment.provider]} ·{' '}
+                        {BOOKING_PAYMENT_STATUS_LABELS[payment.status]}
+                      </p>
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {formatDateTime(payment.createdAt)}
+                        {payment.providerOrderId ? ` · ${payment.providerOrderId}` : ''}
+                      </p>
+                    </div>
+                    <p className="font-semibold tabular-nums">
+                      {formatOptionalCurrency(payment.amount)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Paid status becomes authoritative after payment verification (C7).
+              </p>
+            </div>
+          ) : null}
         </BookingDetailSection>
       </div>
 

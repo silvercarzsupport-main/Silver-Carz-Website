@@ -2,7 +2,12 @@ import Link from 'next/link';
 
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
 import { Button } from '@/components/ui/button';
-import { customerBookingDocumentsPath, customerBookingPath, ROUTES } from '@/constants/routes';
+import {
+  customerBookingDocumentsPath,
+  customerBookingPath,
+  customerBookingPaymentPath,
+  ROUTES,
+} from '@/constants/routes';
 import { MyBookingsSubmitToast } from '@/features/customer-booking/components/my-bookings-submit-toast';
 import {
   customerRequestStatusToneClass,
@@ -17,6 +22,10 @@ import { BOOKING_STATUSES, RENTAL_MODE_LABELS } from '@/types/enums';
 function bookingHref(booking: BookingWithVehicle): string {
   if (booking.status === BOOKING_STATUSES.draft && !booking.document_submitted) {
     return customerBookingDocumentsPath(booking.id);
+  }
+  const status = getCustomerRequestStatusPresentation(booking);
+  if (status.paymentAvailable) {
+    return customerBookingPaymentPath(booking.id);
   }
   return customerBookingPath(booking.id);
 }

@@ -97,7 +97,7 @@ export function getCustomerRequestStatusPresentation(
           ? 'Your request was approved. Payment is now available.'
           : 'Your booking is confirmed. The vehicle is reserved for your pickup dates.',
         tone: 'success',
-        ctaLabel: unpaid ? 'View booking' : 'View booking',
+        ctaLabel: unpaid ? 'Pay now' : 'View booking',
         paymentAvailable: unpaid,
         rejectionReason: null,
       };
@@ -106,7 +106,7 @@ export function getCustomerRequestStatusPresentation(
         label: 'Active',
         description: 'Your rental is in progress.',
         tone: 'success',
-        ctaLabel: 'View booking',
+        ctaLabel: unpaid ? 'Pay now' : 'View booking',
         paymentAvailable: unpaid,
         rejectionReason: null,
       };
