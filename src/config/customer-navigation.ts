@@ -11,8 +11,8 @@ export interface CustomerNavItem {
  */
 export const customerMainNavItems: readonly CustomerNavItem[] = [
   { title: 'Book a Car', href: ROUTES.bookACar },
-  { title: 'Car Pooling', href: ROUTES.carPooling },
   { title: 'Car Detailing', href: ROUTES.carDetailing },
+  { title: 'Vendor', href: ROUTES.vendor },
   { title: 'About Us', href: ROUTES.aboutUs },
 ] as const;
 

@@ -11,6 +11,7 @@ import {
   createBookingDatabaseFailureError,
   createBookingNotFoundError,
   createDuplicateInvoiceError,
+  createVehicleUnavailableError,
 } from '@/features/bookings/errors';
 import { AppError } from '@/lib/errors';
 import { createPaginatedResult, normalizePaginationParams, toOffset } from '@/lib/pagination';
@@ -124,6 +125,14 @@ function mapPersistenceError(error: unknown, invoiceNumber?: string): AppError {
     (rawMessage.includes('invoice_number') || rawMessage.includes('bookings_invoice'))
   ) {
     return createDuplicateInvoiceError(invoiceNumber);
+  }
+
+  if (
+    normalized.code === '23P01' ||
+    rawMessage.includes('no_overlapping_active_hires') ||
+    rawMessage.includes('exclusion')
+  ) {
+    return createVehicleUnavailableError('This vehicle is already booked for the requested dates.');
   }
 
   if (normalized.code === '23505') {

@@ -38,6 +38,7 @@ import {
   type VehicleRepository,
 } from '@/features/vehicles/repository';
 import { PERMISSIONS, requirePermission } from '@/lib/auth';
+import { todayIsoIst } from '@/lib/dates/ist';
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import { fromPromise } from '@/services';
 import type {
@@ -116,7 +117,7 @@ export interface AvailabilityService {
 const BOOKING_DERIVED_SET = new Set<string>(VEHICLE_BOOKING_DERIVED_STATUSES);
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayIsoIst();
 }
 
 function isBookingDerivedStatus(status: VehicleAvailabilityStatus): boolean {

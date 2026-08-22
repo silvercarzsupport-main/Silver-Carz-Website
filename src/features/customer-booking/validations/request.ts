@@ -8,6 +8,10 @@
 import { z } from 'zod';
 
 import {
+  getBookingHorizonEndIso,
+  todayIsoIst,
+} from '@/features/customer-booking/lib/calendar-dates';
+import {
   contactNumberSchema,
   entityIdSchema,
   isoDateSchema,
@@ -16,6 +20,31 @@ import {
   requiredString,
   zipCodeSchema,
 } from '@/validations/shared';
+
+function refineBookingHorizon(
+  deliveryDate: string,
+  returnDate: string,
+  ctx: z.RefinementCtx,
+): void {
+  const today = todayIsoIst();
+  const horizon = getBookingHorizonEndIso(today);
+
+  if (deliveryDate < today) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Pickup date cannot be in the past.',
+      path: ['deliveryDate'],
+    });
+  }
+
+  if (deliveryDate > horizon || returnDate > horizon) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Pickup and return must fall within this month or next month.',
+      path: ['returnDate'],
+    });
+  }
+}
 
 export const customerBookingRequestSchema = z
   .object({
@@ -39,6 +68,7 @@ export const customerBookingRequestSchema = z
   })
   .superRefine((data, ctx) => {
     refineDateRange(data.deliveryDate, data.returnDate, ctx, ['returnDate']);
+    refineBookingHorizon(data.deliveryDate, data.returnDate, ctx);
   });
 
 export type CustomerBookingRequestInput = z.infer<typeof customerBookingRequestSchema>;
@@ -52,6 +82,7 @@ export const customerBookingDatesSchema = z
   })
   .superRefine((data, ctx) => {
     refineDateRange(data.deliveryDate, data.returnDate, ctx, ['returnDate']);
+    refineBookingHorizon(data.deliveryDate, data.returnDate, ctx);
   });
 
 export type CustomerBookingDatesInput = z.infer<typeof customerBookingDatesSchema>;

@@ -1,0 +1,26 @@
+.car-detailing-page {
+  scroll-behavior: smooth;
+}
+
+.car-detailing-page .detailing-card {
+  border-radius: calc(var(--radius) * 1.5);
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--elevation-card);
+}
+
+.car-detailing-page .detailing-card:where(.bg-tone-ink *) {
+  border-color: rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 24px 60px -32px rgb(0 0 0 / 0.45);
+}
+
+@media (pointer: fine) {
+  body.has-detailing-cursor,
+  body.has-detailing-cursor a,
+  body.has-detailing-cursor button {
+    cursor: none;
+  }
+}

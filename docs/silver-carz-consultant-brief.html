@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Silver Carz — Project Scope Brief for Quotation Review</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 16mm 18mm 16mm;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      color: #1a1d24;
+      background: #fff;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    h1, h2, h3, h4 { color: #0f1115; margin: 0 0 8px; line-height: 1.25; }
+    h1 { font-size: 26pt; letter-spacing: -0.03em; }
+    h2 {
+      font-size: 13.5pt;
+      margin-top: 18px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid #f4b400;
+      page-break-after: avoid;
+    }
+    h3 { font-size: 11pt; margin-top: 12px; page-break-after: avoid; }
+    p { margin: 0 0 8px; }
+    ul, ol { margin: 0 0 10px; padding-left: 18px; }
+    li { margin-bottom: 3px; }
+    strong { font-weight: 650; }
+
+    .cover {
+      min-height: 250mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      background: #0f1115;
+      color: #f4b400;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      margin-bottom: 16px;
+    }
+
+    .cover-rule {
+      height: 6px;
+      background: linear-gradient(90deg, #f4b400 0%, #0f1115 100%);
+      margin: 18px 0 22px;
+    }
+
+    .meta { color: #4b5563; font-size: 10pt; }
+    .meta dt { font-weight: 700; color: #0f1115; float: left; width: 140px; }
+    .meta dd { margin: 0 0 6px 140px; }
+
+    .purpose {
+      background: #faf7ee;
+      border-left: 5px solid #f4b400;
+      padding: 12px 14px;
+      margin: 18px 0;
+    }
+
+    .footer-note {
+      font-size: 8.5pt;
+      color: #6b7280;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 6px 0 12px;
+      font-size: 9.5pt;
+      page-break-inside: auto;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #0f1115;
+      color: #fff;
+      font-weight: 650;
+    }
+    tr:nth-child(even) td { background: #fafafa; }
+    td.status-done { color: #047857; font-weight: 650; }
+    td.status-partial { color: #b45309; font-weight: 650; }
+    td.status-open { color: #b91c1c; font-weight: 650; }
+
+    .tag {
+      display: inline-block;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: #f4b400;
+      color: #0f1115;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .card {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 10px 12px;
+      background: #fff;
+      page-break-inside: avoid;
+    }
+    .card h3 { margin-top: 0; }
+
+    .callout {
+      background: #0f1115;
+      color: #f9fafb;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin: 12px 0;
+      page-break-inside: avoid;
+    }
+    .callout strong { color: #f4b400; }
+
+    .muted { color: #4b5563; }
+    .keep { page-break-inside: avoid; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 8.5pt;
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .flow {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 8.5pt;
+      background: #f8f8f6;
+      border: 1px solid #e5e7eb;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      margin: 8px 0 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER -->
+  <section class="cover">
+    <div>
+      <div class="eyebrow">Confidential · Consultant quotation brief</div>
+      <h1>Silver Carz<br />Rental &amp; Fleet Management System</h1>
+      <div class="cover-rule"></div>
+      <p style="font-size: 13pt; color: #374151; max-width: 520px;">
+        Project scope, architecture, and implementation summary for an independent
+        industry expert to assess commercial quoting to the client.
+      </p>
+      <dl class="meta" style="margin-top: 28px;">
+        <dt>Client / brand</dt><dd>Silver Carz, Nagpur, Maharashtra (India)</dd>
+        <dt>Product type</dt><dd>Custom dual-portal web application (admin operations + customer booking)</dd>
+        <dt>Build period</dt><dd>26 July 2026 – 12 August 2026 (active development; ~2.5 weeks)</dd>
+        <dt>Document date</dt><dd>14 August 2026</dd>
+        <dt>Purpose</dt><dd>Help a consultant estimate a fair client quote. This document does not recommend a price.</dd>
+      </dl>
+    </div>
+    <div>
+      <div class="purpose">
+        <strong>How to use this brief.</strong> Treat this as a scope pack, not a sales deck.
+        It describes what was actually built, how it was engineered, what is production-ready,
+        and what is still incomplete. Quote against delivered capability plus remaining go-live work,
+        not against a generic “car rental website.”
+      </div>
+      <p class="footer-note">
+        Prepared from the live codebase (TypeScript/Next.js application, Supabase schema, and internal docs).
+        Figures are approximate and intended for commercial scoping, not a formal audit.
+      </p>
+    </div>
+  </section>
+
+  <!-- 1. EXECUTIVE SUMMARY -->
+  <h2>1. Executive summary</h2>
+  <p>
+    Silver Carz commissioned a <strong>custom rental operations system</strong>, not a brochure site.
+    The product is a dashboard-first fleet and booking platform for internal staff, plus a public
+    customer portal where people can browse cars, request a hire, upload KYC documents, wait for
+    staff approval, and start an online payment.
+  </p>
+  <p>
+    The work is closer to a <strong>small custom SaaS / operations product</strong> than to a
+    WordPress or template build. Business rules (availability, schedule conflicts, hire pricing,
+    invoice numbers, booking lifecycle) live in dedicated server-side engines so they are not
+    duplicated in the UI. Security is enforced in Postgres with Row Level Security, not only in the frontend.
+  </p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>What this is</h3>
+      <ul>
+        <li>Two branded portals in one codebase</li>
+        <li>Staff RMS: fleet, bookings, calendar, KPIs</li>
+        <li>Customer site: browse → request → documents → pay</li>
+        <li>India-specific money, KYC, and Razorpay checkout</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What this is not (yet)</h3>
+      <ul>
+        <li>Not a fully closed payment loop (verification still pending)</li>
+        <li>Not a complete CRM (customers / drivers / settings are placeholders)</li>
+        <li>Not car pooling, detailing, or marketing CMS</li>
+        <li>Not invoice PDF printing or GST-ready invoicing</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout">
+    <strong>Quoting implication:</strong> the hard custom work (dual auth, RLS, scheduling engines,
+    KYC storage, payment order creation) is largely done. Remaining work is concentrated in
+    payment confirmation, a few operational modules, and go-live hardening — not in rebuilding the product.
+  </div>
+
+  <!-- 2. CLIENT CONTEXT -->
+  <h2>2. Client context and product intent</h2>
+  <p>
+    Silver Carz is a vehicle rental business in Nagpur. The system is meant to replace informal
+    (spreadsheet / WhatsApp / walk-in) operations with a single source of truth for:
+  </p>
+  <ul>
+    <li>Which cars are free, reserved, on hire, in maintenance, or retired</li>
+    <li>Who booked which vehicle, for which dates, at which rate</li>
+    <li>Staff-created walk-in bookings and customer-originated requests in one queue</li>
+    <li>Document collection before a car is released</li>
+    <li>Hire money (daily rate × days, extra km, advance, remaining balance) in INR</li>
+  </ul>
+  <p>
+    Staff scale assumed in the original product brief is small (Owner + Manager roles; a handful of
+    internal users). The customer portal is public and unbounded. Currency, locale, and document
+    types are India-specific (INR, <code>en-IN</code>, driving licence / government ID / address proof,
+    Razorpay).
+  </p>
+
+  <!-- 3. DELIVERED SCOPE -->
+  <h2>3. What was implemented</h2>
+
+  <h3>3.1 Admin portal <span class="tag">Staff</span></h3>
+  <p>
+    Internal application at <code>/admin</code>. Email/password login. Only Owner and Manager
+    (staff allowlist) can enter. Customers who log in here are rejected.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Module</th><th>What staff can do</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Authentication</td>
+        <td>Email/password login, cookie sessions, inactive-account lockout. Password reset is admin-handled (no self-service).</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>Dashboard</td>
+        <td>Post-login operations home: KPI cards, booking-status pie, fleet-availability bars, today’s pickups/returns, recent bookings, fleet snapshot, live clock.</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>Bookings — walk-in</td>
+        <td>Full CRUD-style workspace: searchable/filterable list, create, edit, details. Shared form for create/edit. Soft-cancel (status = cancelled). Print invoice is a disabled placeholder.</td>
+        <td class="status-done">Done (print open)</td>
+      </tr>
+      <tr>
+        <td>Bookings — customer queue</td>
+        <td>Separate “Pending approval” vs “Confirmed” tabs. Staff review uploaded KYC (signed preview URLs), then approve or deny with a written reason.</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>Vehicles / fleet</td>
+        <td>List with search/filters/pagination; add/edit vehicle; details profile; image upload to Storage; availability and soft-retire; recent bookings on the vehicle record.</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>Fleet calendar</td>
+        <td>Day / week / month occupancy timeline. Range-scoped data load. Click through to booking details. Read-only (no drag-and-drop scheduling).</td>
+        <td class="status-done">Done (no DnD)</td>
+      </tr>
+      <tr>
+        <td>Customers / Drivers / Settings</td>
+        <td>Sidebar entries exist as placeholders. No CRM, driver roster, or settings UI.</td>
+        <td class="status-open">Not built</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 Customer portal <span class="tag">Public</span></h3>
+  <p>
+    Public site at <code>/</code> with a distinct yellow/black/white brand (same component library,
+    different design tokens). One Supabase Auth project serves both portals; roles split the experience.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Module</th><th>What customers can do</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Book a Car</td>
+        <td>Browse active fleet, filter, select a vehicle, see a summary and daily rate. Public read is RLS-limited to active vehicles.</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>Customer auth</td>
+        <td>Sign up and login. Public signup always creates <code>customer</code> role. Staff emails are allowlisted separately so a public signup cannot become Owner/Manager.</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>Booking request wizard</td>
+        <td>Authenticated multi-step flow: dates (with booked-date calendar), trip details, review. Server re-checks availability and conflicts. Draft is saved locally between steps.</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>KYC documents</td>
+        <td>Upload driving licence, government ID, and address proof (PDF/JPEG/PNG, max 5&nbsp;MB each) into a <em>private</em> Storage bucket. Completeness gate before staff review.</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>My bookings + request status</td>
+        <td>List own requests; see pending / rejected (with reason) / approved / payment-required states.</td>
+        <td class="status-done">Done</td>
+      </tr>
+      <tr>
+        <td>Online payment</td>
+        <td>After approval, Pay Now creates a Razorpay order server-side, records a pending attempt, and opens Checkout. Webhook verifies signature and stores gateway payment id.</td>
+        <td class="status-partial">Partial — see §7</td>
+      </tr>
+      <tr>
+        <td>Car pooling / detailing / about / profile / legal</td>
+        <td>Routes exist as branded placeholders. No booking, CMS, or account-profile editing.</td>
+        <td class="status-open">Not built</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 End-to-end hire journey (as implemented)</h3>
+  <div class="flow">Customer browses fleet (public)
+  → signs up / logs in (role = customer)
+  → picks vehicle → date calendar (blocked days from Conflict Engine)
+  → trip details + estimated total (Pricing Engine)
+  → submit request → draft booking + invoice number allocated
+  → upload 3 KYC files (private Storage)
+  → staff reviews documents on admin booking detail
+  → staff Approve  or  Deny + reason
+  → if approved: customer Pay Now (Razorpay Checkout)
+  → webhook stores provider payment id
+  → confirmation screen shows “processing”
+  → [NOT YET] authoritative mark-paid + booking collection update</div>
+
+  <!-- 4. HOW IT WAS BUILT -->
+  <h2>4. How it was built (architecture)</h2>
+  <p>
+    The implementation is a production-style layered Next.js application, not a page-by-page prototype.
+    That matters for quoting: the client is buying a maintainable product, not a one-off demo.
+  </p>
+
+  <h3>4.1 Application shape</h3>
+  <ul>
+    <li><strong>Thin routes.</strong> Files under <code>src/app/</code> only compose feature UI. Business logic is not in pages.</li>
+    <li><strong>Feature modules.</strong> Domain code lives in <code>src/features/</code>: auth, bookings, vehicles, calendar, dashboard, customer-auth, customer-booking, booking-documents, payments.</li>
+    <li><strong>Layering per feature.</strong> Repository (Supabase/SQL) → Service (rules + <code>ApiResponse</code>) → Server Action (UI entry) → React components.</li>
+    <li><strong>Server Components by default.</strong> Client components only where interactivity is required (forms, tables, charts, checkout).</li>
+    <li><strong>One backend project.</strong> Supabase Postgres + Auth + Storage. No separate custom API server.</li>
+  </ul>
+
+  <h3>4.2 Dual-portal split</h3>
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>Admin</th><th>Customer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>URL space</td><td><code>/admin/*</code></td><td><code>/</code>, <code>/login</code>, <code>/booking/…</code></td></tr>
+      <tr><td>Roles</td><td>owner, manager (staff allowlist)</td><td>customer (default on public signup)</td></tr>
+      <tr><td>Visual identity</td><td>Gold-on-light/dark operations UI, sidebar shell</td><td>Yellow / black / white marketing + booking chrome</td></tr>
+      <tr><td>Auth screens</td><td><code>/admin/login</code></td><td><code>/login</code>, <code>/signup</code></td></tr>
+      <tr><td>Data access</td><td>Full fleet and all bookings via staff RLS</td><td>Own bookings, public active vehicles, own documents/payments</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Theme switching is configuration-driven (CSS variables + <code>data-portal</code>), so both portals
+    share shadcn/ui primitives without forking the component library. A vendor theme preset exists
+    for a possible third portal later; it is not implemented as a product.
+  </p>
+
+  <h3>4.3 Centralized domain engines (high-value custom logic)</h3>
+  <p>
+    These are the pieces that typically justify custom-software pricing. UI never invents the math
+    or overlap rules; every surface calls the same services.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Engine</th><th>Responsibility</th><th>Why it is non-trivial</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Vehicle Availability</td>
+        <td>available / reserved / booked / maintenance / inactive; sync from bookings; staff override</td>
+        <td>Booking-driven state plus manual maintenance that must not be overwritten</td>
+      </tr>
+      <tr>
+        <td>Conflict Detection</td>
+        <td>Inclusive date-window overlap per vehicle; blocking vs ignored statuses</td>
+        <td>Same-day handoff conflicts; adjacent days do not; draft/cancelled ignored; edit excludes self</td>
+      </tr>
+      <tr>
+        <td>Status Automation</td>
+        <td>upcoming / active / completed from dates; cancelled/denied/draft override</td>
+        <td>Display status vs persisted DB status; used by calendar, dashboard, availability</td>
+      </tr>
+      <tr>
+        <td>Pricing</td>
+        <td>Inclusive rental days, km charge, subtotal, grand total, remaining balance</td>
+        <td>Single source of truth; GST/discount hooks exist but rates are 0 today; security deposit is not netted off balance</td>
+      </tr>
+      <tr>
+        <td>Invoice numbering</td>
+        <td>Atomic <code>SC-YYYY-XXXXX</code> via Postgres RPC (yearly sequence)</td>
+        <td>Concurrency-safe; client cannot supply or rewrite numbers</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>4.4 Data and security model</h3>
+  <ul>
+    <li><strong>Postgres tables:</strong> <code>profiles</code>, <code>vehicles</code>, <code>bookings</code>, <code>invoice_sequences</code>, <code>booking_documents</code>, <code>payments</code>, <code>staff_allowlist</code>.</li>
+    <li><strong>RLS enabled (and forced) on business tables.</strong> Anonymous users cannot read staff data. Customers can only see their own bookings/documents/payments. Staff helpers are <code>SECURITY DEFINER</code> role checks — not JWT <code>user_metadata</code>.</li>
+    <li><strong>Storage:</strong> public bucket for vehicle images; private bucket for KYC. Previews use short-lived signed URLs (staff ~2 minutes). Path-scoped policies; customers cannot list other people’s files.</li>
+    <li><strong>Service role</strong> is server-only (webhooks). Never shipped to the browser.</li>
+    <li><strong>Validation:</strong> Zod schemas shared by forms and Server Actions. Client input is not trusted for rates, invoice numbers, status, or <code>created_by</code>.</li>
+  </ul>
+
+  <!-- 5. TECH STACK -->
+  <h2>5. Technology stack</h2>
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>Choice</th><th>Notes for quoting</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Framework</td><td>Next.js 16 (App Router), React 19</td><td>SSR/RSC, Server Actions, Proxy for session refresh</td></tr>
+      <tr><td>Language</td><td>TypeScript (strict; <code>any</code> disallowed)</td><td>Higher build quality / slightly higher rate than typical JS freelance work</td></tr>
+      <tr><td>Styling / UI</td><td>Tailwind CSS v4, shadcn/ui, Radix, Lucide, Framer Motion</td><td>Custom design system, not a bought theme</td></tr>
+      <tr><td>Forms / tables / charts</td><td>React Hook Form, Zod, TanStack Table, Recharts</td><td>Standard professional stack</td></tr>
+      <tr><td>Server state</td><td>TanStack Query</td><td>Client cache where needed</td></tr>
+      <tr><td>Backend</td><td>Supabase (PostgreSQL, Auth, Storage, RPCs)</td><td>Managed BaaS; client still owns schema, RLS, and migrations</td></tr>
+      <tr><td>Payments</td><td>Razorpay (Orders + Checkout + webhook)</td><td>India card/UPI/netbanking; PCI burden on Razorpay</td></tr>
+      <tr><td>Hosting target</td><td>Vercel + hosted Supabase</td><td>Typical monthly infra is low relative to build cost</td></tr>
+      <tr><td>Tooling</td><td>pnpm, ESLint, Prettier, Husky, lint-staged, Conventional Commits</td><td>Pre-commit typecheck + lint — production hygiene</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">
+    Locale/currency: INR, <code>en-IN</code>, <code>dd MMM yyyy</code>. Dates via date-fns.
+    Package manager pnpm 10; Node 20+.
+  </p>
+
+  <!-- 6. QUALITY -->
+  <h2>6. Engineering quality (relevant to price)</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Practices in place</h3>
+      <ul>
+        <li>~70 Conventional Commits on the main line</li>
+        <li>~24 SQL migrations with comments and apply order</li>
+        <li>~24 internal architecture docs (engines, RLS, UI)</li>
+        <li>Normalized errors (no raw DB messages in UI)</li>
+        <li>Loading / empty / error / not-found states on key screens</li>
+        <li>Responsive audit of the admin portal</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Approximate size</h3>
+      <ul>
+        <li>~391 TypeScript/TSX source files</li>
+        <li>~35,700 lines in <code>src/</code></li>
+        <li>~2,700 lines of SQL migrations</li>
+        <li>~3,800 lines of product documentation</li>
+        <li>9 feature modules</li>
+        <li>26 routed pages (plus API webhook)</li>
+      </ul>
+    </div>
+  </div>
+  <p>
+    Size alone does not set price, but it indicates this is not a 5-page marketing site.
+    A comparable custom dual-portal operations product is typically scoped as a
+    <strong>mid-complexity custom web application</strong> with a payment and KYC increment.
+  </p>
+
+  <!-- 7. PAYMENTS -->
+  <h2>7. Payments — what is done vs what is not</h2>
+  <p>
+    This is the most important commercial caveat. Online payment is <strong>integrated but not closed</strong>.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Capability</th><th>Status</th><th>Detail</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Eligibility gate</td>
+        <td class="status-done">Done</td>
+        <td>Pay only after approval, documents submitted, remaining balance &gt; 0, not cancelled/denied</td>
+      </tr>
+      <tr>
+        <td>Razorpay order creation</td>
+        <td class="status-done">Done</td>
+        <td>Server-side; amount from Pricing Engine remaining balance; receipt tied to invoice number</td>
+      </tr>
+      <tr>
+        <td>Pending payment row</td>
+        <td class="status-done">Done</td>
+        <td><code>payments</code> table with RLS; customers cannot self-mark paid</td>
+      </tr>
+      <tr>
+        <td>Checkout UI + retry/cancel</td>
+        <td class="status-done">Done</td>
+        <td>Browser Checkout; failed/cancelled attempts are recorded</td>
+      </tr>
+      <tr>
+        <td>Webhook signature verify</td>
+        <td class="status-done">Done</td>
+        <td><code>POST /api/payments/razorpay/webhook</code>; attaches <code>provider_payment_id</code></td>
+      </tr>
+      <tr>
+        <td>Authoritative mark-paid (C7)</td>
+        <td class="status-open">Not done</td>
+        <td>Does <em>not</em> set payment = paid, does <em>not</em> write <code>booking_amount</code>, does <em>not</em> treat Checkout success as proof</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Staff can still record cash/UPI/card on walk-in bookings via the admin form
+    (<code>payment_method</code> + <code>booking_amount</code>). That path is independent of Razorpay.
+  </p>
+
+  <!-- 8. OUT OF SCOPE -->
+  <h2>8. Explicitly not included (open / later phases)</h2>
+  <table>
+    <thead>
+      <tr><th>Item</th><th>Impact if the client expects it in the quote</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Payment verification &amp; confirmation (C7)</td><td>Must be finished before taking live customer money with confidence</td></tr>
+      <tr><td>GST, discounts, included-km packages, invoice PDF / print</td><td>Pricing engine has hooks; no tax invoices or print output yet</td></tr>
+      <tr><td>Customer CRM, driver roster, admin user-management UI</td><td>Nav placeholders only</td></tr>
+      <tr><td>Customer profile editing, self-service password reset</td><td>Not implemented</td></tr>
+      <tr><td>Car pooling, car detailing, About Us, legal pages</td><td>Branded empty routes</td></tr>
+      <tr><td>Calendar year view, drag-and-drop reschedule</td><td>Calendar is view/navigate only</td></tr>
+      <tr><td>Notifications (email/SMS/WhatsApp)</td><td>None</td></tr>
+      <tr><td>Reports / accounting export / multi-branch</td><td>None</td></tr>
+      <tr><td>Native mobile apps</td><td>Responsive web only</td></tr>
+      <tr><td>Per-file KYC approve/reject workflow</td><td>Staff can view files; approval is at booking level</td></tr>
+      <tr><td>Vendor portal</td><td>Theme tokens only</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 9. QUOTING FRAME -->
+  <h2>9. Suggested quoting frame (for the consultant)</h2>
+  <p>
+    The author of this brief is the developer, not a pricing authority. The following is a
+    <strong>work-breakdown the consultant can price</strong>, not a recommended rupee figure.
+  </p>
+
+  <h3>9.1 Work already delivered (should be valued)</h3>
+  <ol>
+    <li>Product architecture, design system, and dual-portal shell</li>
+    <li>Auth, RBAC, staff allowlist, RLS, and session/proxy hardening</li>
+    <li>Fleet CRUD + images + availability engine</li>
+    <li>Admin booking workspace + customer request/approval workflow</li>
+    <li>Conflict, status, pricing, and invoice-number engines</li>
+    <li>Operations dashboard and occupancy calendar</li>
+    <li>Private KYC document pipeline</li>
+    <li>Razorpay checkout infrastructure (order + pending + webhook attach)</li>
+  </ol>
+
+  <h3>9.2 Remaining to a responsible go-live</h3>
+  <ol>
+    <li><strong>Must-have:</strong> payment verification (C7), webhook idempotency tests, live Razorpay keys, failure/refund policy</li>
+    <li><strong>Must-have:</strong> production env (Vercel + Supabase prod), backups, staff training, seed/allowlist</li>
+    <li><strong>Should-have:</strong> invoice PDF, basic email/SMS on request/approval/payment</li>
+    <li><strong>Should-have:</strong> customer profile, password reset, terms/privacy pages</li>
+    <li><strong>Nice-to-have:</strong> customers/drivers modules, GST, reports, pooling/detailing</li>
+  </ol>
+
+  <h3>9.3 Complexity signals (use these, not page-count)</h3>
+  <ul>
+    <li><strong>Two products in one:</strong> internal RMS + public booking site, shared data, split auth.</li>
+    <li><strong>Domain rules:</strong> scheduling + money + KYC + payments is a higher band than CRUD.</li>
+    <li><strong>Security surface:</strong> PII documents in private storage; payment webhooks; role isolation.</li>
+    <li><strong>India payments:</strong> Razorpay, INR, UPI-capable checkout; remaining verification work is specialized, not cosmetic.</li>
+    <li><strong>Code quality:</strong> typed, documented, migrated, lint-gated — maintenance cost should be lower than a throwaway build, so a warranty/retainer is reasonable.</li>
+    <li><strong>Calendar time:</strong> ~2.5 weeks of dense delivery is a velocity signal, not a ceiling on commercial value. Custom dual-portal systems of this shape are often quoted as a multi-week / multi-month product even when a fast developer compresses the calendar.</li>
+  </ul>
+
+  <h3>9.4 Commercial models the consultant may consider</h3>
+  <table>
+    <thead>
+      <tr><th>Model</th><th>When it fits</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Fixed fee for delivered MVP + punch-list to go-live</td>
+        <td>Client wants one number for “what exists + make payments live”</td>
+      </tr>
+      <tr>
+        <td>Phased: (A) current build, (B) go-live/C7, (C) CRM/invoices/GST</td>
+        <td>Client may not need pooling/detailing now; keep later work optional</td>
+      </tr>
+      <tr>
+        <td>Build fee + monthly retainer</td>
+        <td>Hosting, Razorpay issues, small change requests, backups, staff support</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Recurring costs the quote should mention separately (usually pass-through, not developer margin):
+    Vercel, Supabase, Razorpay MDR, SMS/email provider, domain/DNS.
+  </p>
+  <div class="callout">
+    <strong>Do not quote this as a “website.”</strong> Quote it as a custom operations + customer booking
+    product with KYC and payments. If the client compares it to a ₹20–40k brochure site, the comparison
+    is the wrong category. If they compare it to an off-the-shelf rental SaaS subscription, the trade-off
+    is ownership and Silver Carz-specific workflow vs monthly SaaS fees.
+  </div>
+
+  <!-- 10. RISKS -->
+  <h2>10. Risks and assumptions a consultant should flag</h2>
+  <ul>
+    <li><strong>Live money:</strong> do not enable live Razorpay until C7 is done and webhook/replay cases are tested.</li>
+    <li><strong>KYC/PII:</strong> driving licence and Aadhaar-class files are in private storage; retention/deletion policy is not productized.</li>
+    <li><strong>Owner vs Manager:</strong> permission matrix exists but both roles currently have full access.</li>
+    <li><strong>Customer identity</strong> is still denormalized on the booking row (name/phone/address), not a full customer master.</li>
+    <li><strong>No automated test suite</strong> of note; quality is architectural + manual. A go-live quote may include smoke tests around payments and RLS.</li>
+    <li><strong>README in the repo is stale</strong> (it still describes an admin-only MVP). Trust this brief and the code over that README.</li>
+  </ul>
+
+  <!-- 11. CLOSING -->
+  <h2>11. One-page snapshot</h2>
+  <table>
+    <thead>
+      <tr><th>Question</th><th>Answer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>What did the developer build?</td><td>A custom dual-portal fleet rental system for Silver Carz: staff RMS + customer booking/KYC/payment start.</td></tr>
+      <tr><td>How?</td><td>Next.js 16 + TypeScript + Supabase, feature modules, Server Actions, RLS, and five centralized domain engines.</td></tr>
+      <tr><td>Is it a finished commercial product?</td><td>Core operations and request workflow: yes. Authoritative online payment confirmation and several sidebar modules: no.</td></tr>
+      <tr><td>Main remaining paid work?</td><td>C7 payment verification, go-live ops, invoice PDF / notifications, then optional CRM and GST.</td></tr>
+      <tr><td>Category for pricing?</td><td>Mid-complexity custom web application (operations SaaS-like), India payments + KYC, not a marketing website.</td></tr>
+    </tbody>
+  </table>
+  <p class="footer-note" style="margin-top: 16px;">
+    End of brief. For technical deep-dives the repository contains <code>docs/</code>
+    (architecture, authentication, database, pricing, conflict, availability, calendar, dashboard).
+    This document is for commercial scoping only and is not a legal statement of work.
+  </p>
+
+</body>
+</html>

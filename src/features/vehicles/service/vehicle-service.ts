@@ -7,6 +7,7 @@
 
 import 'server-only';
 
+import { DEFAULT_FLEET_CITY, normalizeCityName } from '@/config/fleet-cities';
 import {
   createDuplicateVehicleNumberError,
   createInactiveVehicleError,
@@ -137,6 +138,7 @@ function toCreatePayload(values: CreateVehicleValues): VehicleCreateInput {
     availability_status: values.availability_status,
     image_path: values.image_path ?? null,
     is_active: values.is_active,
+    city: normalizeCityName(values.city) || DEFAULT_FLEET_CITY,
   };
 }
 
@@ -145,6 +147,9 @@ function toUpdatePayload(values: UpdateVehicleValues): VehicleUpdateInput {
     ...values,
     ...(values.vehicle_number !== undefined
       ? { vehicle_number: normalizeVehicleNumber(values.vehicle_number) }
+      : {}),
+    ...(values.city !== undefined
+      ? { city: normalizeCityName(values.city) || DEFAULT_FLEET_CITY }
       : {}),
   };
 

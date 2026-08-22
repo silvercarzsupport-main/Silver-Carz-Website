@@ -19,7 +19,7 @@ import {
 } from '@/features/bookings/errors';
 import { AppError } from '@/lib/errors';
 import type { TypedSupabaseClient } from '@/lib/supabase';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 export interface InvoiceNumberServiceDeps {
   readonly client?: TypedSupabaseClient;
@@ -74,7 +74,8 @@ export function createInvoiceNumberService(
       return deps.client;
     }
 
-    return createSupabaseServerClient();
+    // Sequence RPCs are service_role-only so customers cannot burn invoice numbers.
+    return createSupabaseAdminClient();
   }
 
   function resolvePrefix(override?: string): string {

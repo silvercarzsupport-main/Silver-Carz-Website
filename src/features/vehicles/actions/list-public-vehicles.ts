@@ -17,3 +17,7 @@ export async function listPublicVehicles(
 export async function getPublicVehicle(id: string): Promise<ApiResponse<PublicVehicle>> {
   return getPublicVehicleService().getPublicVehicle(id);
 }
+
+export async function listPublicVehicleCities(): Promise<ApiResponse<string[]>> {
+  return getPublicVehicleService().listPublicVehicleCities();
+}

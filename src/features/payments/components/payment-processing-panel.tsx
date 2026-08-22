@@ -1,8 +1,13 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Clock3 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { customerBookingPath, ROUTES } from '@/constants/routes';
+import { getBookingPaymentPageData } from '@/features/payments/actions';
 
 type PaymentProcessingPanelProps = {
   readonly bookingId: string;
@@ -10,10 +15,49 @@ type PaymentProcessingPanelProps = {
 };
 
 /**
- * Post-gateway return state (C6).
- * Does not claim booking confirmation — that is C7.
+ * Post-gateway return state. Polls until C7 marks the payment paid.
  */
 export function PaymentProcessingPanel({ bookingId, invoiceNumber }: PaymentProcessingPanelProps) {
+  const router = useRouter();
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 24;
+
+    const tick = async () => {
+      attempts += 1;
+      const result = await getBookingPaymentPageData(bookingId);
+      if (cancelled) {
+        return;
+      }
+
+      if (result.success && result.data.eligibility.state === 'already_paid') {
+        router.refresh();
+        return;
+      }
+
+      if (attempts >= maxAttempts) {
+        setTimedOut(true);
+      }
+    };
+
+    void tick();
+    const interval = window.setInterval(() => {
+      if (attempts >= maxAttempts) {
+        window.clearInterval(interval);
+        return;
+      }
+      void tick();
+    }, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [bookingId, router]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3">
@@ -23,13 +67,13 @@ export function PaymentProcessingPanel({ bookingId, invoiceNumber }: PaymentProc
             Payment
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground uppercase sm:text-4xl">
-            Payment processing
+            {timedOut ? 'Still verifying' : 'Confirming payment'}
           </h1>
           <div className="mt-3 h-1 w-12 bg-primary" aria-hidden="true" />
           <p className="mt-5 text-base leading-relaxed text-muted-foreground">
-            Payment submitted — verification pending for booking{' '}
-            <span className="font-semibold text-foreground">{invoiceNumber}</span>. This does not
-            confirm your booking yet.
+            {timedOut
+              ? `We are still confirming payment for booking ${invoiceNumber}. This page will update once verification finishes.`
+              : `Payment received — confirming booking ${invoiceNumber}. This usually takes a few seconds.`}
           </p>
         </div>
       </div>
@@ -41,8 +85,8 @@ export function PaymentProcessingPanel({ bookingId, invoiceNumber }: PaymentProc
       >
         <p className="text-sm font-semibold text-foreground">What happens next</p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Silver Carz will verify the payment with the payment provider. Once verified, your booking
-          confirmation will appear here.
+          Silver Carz verifies the payment with the provider. Your booking is confirmed as soon as
+          that check succeeds — you do not need to pay again.
         </p>
       </div>
 

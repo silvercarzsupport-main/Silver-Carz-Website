@@ -12,8 +12,7 @@ import {
   customerBookingPath,
   ROUTES,
 } from '@/constants/routes';
-import { getOwnCustomerBookingWithVehicle } from '@/features/customer-booking';
-import { getPaymentEligibility, PaymentProcessingPanel } from '@/features/payments';
+import { getBookingPaymentPageData, PaymentProcessingPanel } from '@/features/payments';
 import { APP_ROLES, requireCustomerAuth } from '@/lib/auth';
 import { formatCurrency } from '@/lib/format';
 
@@ -25,18 +24,14 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 /**
- * Post-payment return / confirmation surface.
- * C6 shows processing only — authoritative confirmation is C7.
+ * Post-payment confirmation. Authoritative paid state comes from C7 verification.
  */
 export default async function CustomerBookingConfirmationPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ bookingId: string }>;
-  searchParams: Promise<{ payment?: string }>;
 }) {
   const { bookingId } = await params;
-  const { payment } = await searchParams;
   const nextPath = customerBookingConfirmationPath(bookingId);
   const user = await requireCustomerAuth(nextPath);
 
@@ -58,13 +53,12 @@ export default async function CustomerBookingConfirmationPage({
     );
   }
 
-  const result = await getOwnCustomerBookingWithVehicle(bookingId);
+  const result = await getBookingPaymentPageData(bookingId);
   if (!result.success) {
     notFound();
   }
 
-  const booking = result.data;
-  const eligibility = getPaymentEligibility(booking);
+  const { booking, eligibility } = result.data;
 
   if (eligibility.state === 'already_paid') {
     return (
@@ -76,12 +70,12 @@ export default async function CustomerBookingConfirmationPage({
           </h1>
           <div className="mt-3 h-1 w-12 bg-primary" aria-hidden="true" />
           <p className="mt-5 text-base text-muted-foreground">
-            Payment already completed for booking{' '}
+            Payment received for booking{' '}
             <span className="font-semibold text-foreground">{booking.invoice_number}</span>
             {Number(booking.booking_amount) > 0
               ? ` (${formatCurrency(Number(booking.booking_amount), { maximumFractionDigits: 0 })})`
               : ''}
-            .
+            . Your car is reserved for the selected dates.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button
@@ -99,13 +93,13 @@ export default async function CustomerBookingConfirmationPage({
     );
   }
 
-  if (payment === 'processing' || eligibility.canPay) {
+  if (eligibility.canPay || eligibility.state === 'payment_processing') {
     return (
       <>
         <BookingProgressSteps activeStep={6} />
         <CustomerContainer className="max-w-3xl py-10 sm:py-14">
           <PaymentProcessingPanel bookingId={booking.id} invoiceNumber={booking.invoice_number} />
-          {eligibility.canPay && payment !== 'processing' ? (
+          {eligibility.canPay ? (
             <div className="mt-6">
               <Button asChild variant="outline" className="h-11 rounded-md">
                 <Link href={customerBookingPaymentPath(bookingId)}>Return to payment</Link>
@@ -119,7 +113,7 @@ export default async function CustomerBookingConfirmationPage({
 
   return (
     <>
-      <BookingProgressSteps activeStep={5} />
+      <BookingProgressSteps activeStep={eligibility.state === 'payment_expired' ? 6 : 5} />
       <CustomerContainer className="max-w-3xl py-10 sm:py-14">
         <h1 className="text-3xl font-bold tracking-tight text-foreground uppercase">
           {eligibility.title}

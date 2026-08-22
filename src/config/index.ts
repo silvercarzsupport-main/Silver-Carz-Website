@@ -1,5 +1,12 @@
 export { appConfig, type AppConfig } from './app';
 export {
+  DEFAULT_FLEET_CITY,
+  citiesMatch,
+  normalizeCityName,
+  uniqueCityOptions,
+} from './fleet-cities';
+export { filterIndianCities, INDIAN_CITIES, resolveIndianCity } from './indian-cities';
+export {
   customerLegalNavItems,
   customerMainNavItems,
   customerQuickLinkItems,

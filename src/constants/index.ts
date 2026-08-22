@@ -10,7 +10,12 @@ export {
   vehicleEditPath,
   type AppRoute,
 } from './routes';
-export { STORAGE_KEYS, type StorageKey } from './storage';
+export {
+  BOOKING_CITY_COOKIE_MAX_AGE,
+  SIDEBAR_COOKIE_MAX_AGE,
+  STORAGE_KEYS,
+  type StorageKey,
+} from './storage';
 export { THEME, type ThemeMode } from './theme';
 export { PAGINATION } from './pagination';
 export { TABLE } from './table';

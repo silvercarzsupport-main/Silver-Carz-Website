@@ -2,18 +2,18 @@
 
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { endOfMonth, format, startOfMonth } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { listCustomerVehicleBookedDates } from '@/features/customer-booking/actions/list-booked-dates';
 import {
   buildMonthCells,
+  endOfMonthIso,
   expandInclusiveDateRange,
+  formatIsoMonthTitle,
   getAllowedCalendarMonths,
   isPastDate,
   rangeContainsBookedDate,
-  todayIsoLocal,
-  toIsoDate,
+  todayIsoIst,
 } from '@/features/customer-booking/lib/calendar-dates';
 import { cn } from '@/lib/utils';
 
@@ -43,11 +43,11 @@ export function BookingDateCalendar({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const visibleMonth = view === 'current' ? currentMonth : nextMonth;
-  const todayIso = todayIsoLocal();
+  const todayIso = todayIsoIst();
 
   useEffect(() => {
-    const fromDate = toIsoDate(startOfMonth(currentMonth));
-    const toDate = toIsoDate(endOfMonth(nextMonth));
+    const fromDate = currentMonth;
+    const toDate = endOfMonthIso(nextMonth);
 
     startLoad(async () => {
       setLoadError(null);
@@ -134,7 +134,7 @@ export function BookingDateCalendar({
         </Button>
         <div className="text-center">
           <p className="text-sm font-bold tracking-wide text-foreground uppercase">
-            {format(visibleMonth, 'MMMM yyyy')}
+            {formatIsoMonthTitle(visibleMonth)}
           </p>
           <p className="text-xs text-muted-foreground">
             {view === 'current' ? 'This month' : 'Next month'} · Tap pickup, then return

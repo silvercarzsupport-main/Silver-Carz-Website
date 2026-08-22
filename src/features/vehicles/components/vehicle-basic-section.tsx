@@ -2,6 +2,7 @@
 
 import { Controller } from 'react-hook-form';
 
+import { CitySearchSelect } from '@/components/shared/city-search-select';
 import { FormField, fieldAriaProps } from '@/components/shared/form-field';
 import { FormSection } from '@/components/shared/form-section';
 import { Input } from '@/components/ui/input';
@@ -94,6 +95,41 @@ export function VehicleBasicSection({
               error: errors.color?.message,
             })}
             {...register('color')}
+          />
+        </FormField>
+
+        <FormField
+          id="city"
+          label="City"
+          required
+          description="City where this vehicle is stationed. Customers only see cars from this city."
+          error={errors.city?.message}
+        >
+          <Controller
+            control={control}
+            name="city"
+            render={({ field }) => {
+              const aria = fieldAriaProps({
+                id: 'city',
+                required: true,
+                error: errors.city?.message,
+                description:
+                  'City where this vehicle is stationed. Customers only see cars from this city.',
+              });
+
+              return (
+                <CitySearchSelect
+                  id="city"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isLoading}
+                  placeholder="Select city"
+                  invalid={Boolean(errors.city?.message)}
+                  describedBy={aria['aria-describedby']}
+                  extraOptions={field.value ? [field.value] : []}
+                />
+              );
+            }}
           />
         </FormField>
       </div>

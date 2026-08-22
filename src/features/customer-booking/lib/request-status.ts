@@ -3,6 +3,7 @@
  * Uses the Booking Status Automation Engine for lifecycle resolution.
  */
 
+import { isPaymentWindowOpen } from '@/features/bookings/lib/payment-window';
 import {
   BOOKING_DISPLAY_STATUSES,
   getBookingStatusPresentation,
@@ -39,6 +40,7 @@ export function getCustomerRequestStatusPresentation(
   booking: BookingStatusInput & {
     readonly document_submitted?: boolean | null;
     readonly booking_amount?: number | null;
+    readonly payment_due_at?: string | null;
     readonly rejection_reason?: string | null;
   },
 ): CustomerRequestStatusPresentation {
@@ -68,6 +70,7 @@ export function getCustomerRequestStatusPresentation(
   const presentation = getBookingStatusPresentation(booking);
   const rejectionReason = booking.rejection_reason?.trim() || null;
   const unpaid = Number(booking.booking_amount ?? 0) <= 0;
+  const paymentWindowOpen = isPaymentWindowOpen(booking.payment_due_at);
 
   switch (presentation.status) {
     case BOOKING_DISPLAY_STATUSES.denied:
@@ -92,22 +95,28 @@ export function getCustomerRequestStatusPresentation(
       };
     case BOOKING_DISPLAY_STATUSES.upcoming:
       return {
-        label: unpaid ? 'Approved' : 'Confirmed',
+        label: unpaid ? (paymentWindowOpen ? 'Approved' : 'Payment expired') : 'Confirmed',
         description: unpaid
-          ? 'Your request was approved. Payment is now available.'
+          ? paymentWindowOpen
+            ? 'Your request was approved. Pay now to confirm the booking.'
+            : 'The payment window ended and this hold may be released. Contact Silver Carz if you still need this car.'
           : 'Your booking is confirmed. The vehicle is reserved for your pickup dates.',
-        tone: 'success',
-        ctaLabel: unpaid ? 'Pay now' : 'View booking',
-        paymentAvailable: unpaid,
+        tone: unpaid && !paymentWindowOpen ? 'danger' : 'success',
+        ctaLabel: unpaid && paymentWindowOpen ? 'Pay now' : 'View booking',
+        paymentAvailable: unpaid && paymentWindowOpen,
         rejectionReason: null,
       };
     case BOOKING_DISPLAY_STATUSES.active:
       return {
         label: 'Active',
-        description: 'Your rental is in progress.',
+        description: unpaid
+          ? paymentWindowOpen
+            ? 'Your rental is in progress. Payment is still required.'
+            : 'Your rental is in progress. Contact Silver Carz about outstanding payment.'
+          : 'Your rental is in progress.',
         tone: 'success',
-        ctaLabel: unpaid ? 'Pay now' : 'View booking',
-        paymentAvailable: unpaid,
+        ctaLabel: unpaid && paymentWindowOpen ? 'Pay now' : 'View booking',
+        paymentAvailable: unpaid && paymentWindowOpen,
         rejectionReason: null,
       };
     case BOOKING_DISPLAY_STATUSES.completed:

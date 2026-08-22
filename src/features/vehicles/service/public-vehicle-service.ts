@@ -8,11 +8,13 @@
 
 import 'server-only';
 
+import { DEFAULT_FLEET_CITY, uniqueCityOptions } from '@/config/fleet-cities';
 import { createVehicleNotFoundError } from '@/features/vehicles/errors';
 import {
   getVehicleRepository,
   type VehicleRepository,
 } from '@/features/vehicles/repository/vehicle-repository';
+import { createPaginatedResult, normalizePaginationParams } from '@/lib/pagination';
 import { fromPromise } from '@/services/result';
 import type {
   ApiResponse,
@@ -37,6 +39,7 @@ function toPublicVehicle(vehicle: Vehicle): PublicVehicle {
     availability_status: vehicle.availability_status,
     image_path: vehicle.image_path,
     is_active: vehicle.is_active,
+    city: vehicle.city,
   };
 }
 
@@ -57,6 +60,7 @@ export interface PublicVehicleService {
     query?: VehicleListQuery,
   ): Promise<ApiResponse<PaginatedResult<PublicVehicle>>>;
   getPublicVehicle(id: string): Promise<ApiResponse<PublicVehicle>>;
+  listPublicVehicleCities(): Promise<ApiResponse<string[]>>;
 }
 
 export function createPublicVehicleService(deps?: {
@@ -69,6 +73,15 @@ export function createPublicVehicleService(deps?: {
   return {
     listPublicVehicles(query) {
       return fromPromise(async () => {
+        const city = query?.city?.trim();
+        if (!city) {
+          const pagination = normalizePaginationParams({
+            page: query?.page,
+            pageSize: query?.pageSize ?? PUBLIC_VEHICLE_PAGE_SIZE,
+          });
+          return createPaginatedResult<PublicVehicle>([], pagination, 0);
+        }
+
         const result = await (await repository()).list(sanitizePublicQuery(query));
         return {
           ...result,
@@ -86,6 +99,13 @@ export function createPublicVehicleService(deps?: {
         }
 
         return toPublicVehicle(vehicle);
+      });
+    },
+
+    listPublicVehicleCities() {
+      return fromPromise(async () => {
+        const cities = await (await repository()).listDistinctCities({ isActive: true });
+        return uniqueCityOptions(cities.length > 0 ? cities : [DEFAULT_FLEET_CITY]);
       });
     },
   };

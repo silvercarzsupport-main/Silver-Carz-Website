@@ -12,16 +12,15 @@ import {
   createBookingDocumentStorageFailureError,
   createBookingDocumentValidationError,
 } from '@/features/booking-documents/errors';
+import {
+  claimedMimeMatchesSniff,
+  sniffBookingDocumentMime,
+  type SniffedBookingDocumentMime,
+} from '@/features/booking-documents/lib/file-sniff';
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-const ACCEPT_MIME = new Set<string>(BOOKING_DOCUMENT.acceptMimeTypes);
-
-export function validateBookingDocumentFile(file: File): void {
-  if (!ACCEPT_MIME.has(file.type)) {
-    throw createBookingDocumentValidationError('Use a PDF, JPG, or PNG file.');
-  }
-
+export async function validateBookingDocumentFile(file: File): Promise<SniffedBookingDocumentMime> {
   if (file.size <= 0) {
     throw createBookingDocumentValidationError('The selected file is empty.');
   }
@@ -29,6 +28,19 @@ export function validateBookingDocumentFile(file: File): void {
   if (file.size > BOOKING_DOCUMENT.maxBytes) {
     throw createBookingDocumentValidationError('File must be 5 MB or smaller.');
   }
+
+  const header = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  const sniffed = sniffBookingDocumentMime(header);
+
+  if (!sniffed) {
+    throw createBookingDocumentValidationError('Use a PDF, JPG, or PNG file.');
+  }
+
+  if (!claimedMimeMatchesSniff(file.type, sniffed)) {
+    throw createBookingDocumentValidationError('The file type does not match the selected file.');
+  }
+
+  return sniffed;
 }
 
 function extensionForMime(mime: string): string {
@@ -63,17 +75,16 @@ export function buildBookingDocumentObjectPath(params: {
 export async function uploadBookingDocumentObject(params: {
   readonly path: string;
   readonly file: File;
+  readonly contentType: string;
   readonly client?: TypedSupabaseClient;
 }): Promise<void> {
-  validateBookingDocumentFile(params.file);
-
   const client = params.client ?? (await createSupabaseServerClient());
   const { error } = await client.storage
     .from(BOOKING_DOCUMENT.bucket)
     .upload(params.path, params.file, {
       cacheControl: '3600',
       upsert: false,
-      contentType: params.file.type,
+      contentType: params.contentType,
     });
 
   if (error) {

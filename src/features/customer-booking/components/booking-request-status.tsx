@@ -53,7 +53,7 @@ export function BookingRequestStatus({ booking }: BookingRequestStatusProps) {
 
   return (
     <>
-      <BookingProgressSteps activeStep={5} />
+      <BookingProgressSteps activeStep={status.paymentAvailable ? 6 : 5} />
 
       <CustomerContainer className="max-w-3xl py-10 sm:py-14">
         <div className="flex items-start gap-3">

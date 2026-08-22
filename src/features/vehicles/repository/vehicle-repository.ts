@@ -7,6 +7,7 @@
 
 import 'server-only';
 
+import { normalizeCityName } from '@/config/fleet-cities';
 import {
   createDuplicateVehicleNumberError,
   createVehicleDatabaseFailureError,
@@ -54,6 +55,8 @@ export interface VehicleRepository {
   list(query?: VehicleListQuery): Promise<PaginatedResult<Vehicle>>;
   search(search: string, query?: VehicleListQuery): Promise<PaginatedResult<Vehicle>>;
   count(filters?: VehicleListFilters): Promise<number>;
+  /** Distinct stationed cities (used by the customer location picker). */
+  listDistinctCities(filters?: Pick<VehicleListFilters, 'isActive'>): Promise<string[]>;
 }
 
 function escapeIlike(value: string): string {
@@ -124,7 +127,11 @@ function resolveSearchFuelType(term: string): (typeof FUEL_TYPE_VALUES)[number] 
 
 function buildSearchOrFilter(term: string): string {
   const pattern = `%${escapeIlike(term)}%`;
-  const clauses = [quotedIlike('vehicle_name', pattern), quotedIlike('vehicle_number', pattern)];
+  const clauses = [
+    quotedIlike('vehicle_name', pattern),
+    quotedIlike('vehicle_number', pattern),
+    quotedIlike('city', pattern),
+  ];
 
   const fuelType = resolveSearchFuelType(term);
   if (fuelType) {
@@ -143,6 +150,7 @@ type FilterableBuilder = {
   eq: (column: string, value: unknown) => FilterableBuilder;
   gte: (column: string, value: unknown) => FilterableBuilder;
   lte: (column: string, value: unknown) => FilterableBuilder;
+  ilike: (column: string, value: string) => FilterableBuilder;
   or: (filters: string) => FilterableBuilder;
 };
 
@@ -175,6 +183,11 @@ function applyNonSearchFilters(
 
   if (filters?.maxDailyRate !== undefined && Number.isFinite(filters.maxDailyRate)) {
     next = next.lte('default_daily_rate', filters.maxDailyRate);
+  }
+
+  const city = filters?.city ? normalizeCityName(filters.city) : '';
+  if (city) {
+    next = next.ilike('city', escapeIlike(city));
   }
 
   if (filters?.createdFrom) {
@@ -319,6 +332,36 @@ export function createVehicleRepository(client: TypedSupabaseClient): VehicleRep
       }
 
       return count ?? 0;
+    },
+
+    async listDistinctCities(filters = {}) {
+      let builder = client.from('vehicles').select('city');
+
+      if (filters.isActive !== undefined) {
+        builder = builder.eq('is_active', filters.isActive);
+      } else {
+        builder = builder.eq('is_active', true);
+      }
+
+      const { data, error } = await builder;
+
+      if (error) {
+        throw mapPersistenceError(error);
+      }
+
+      const seen = new Set<string>();
+      const cities: string[] = [];
+
+      for (const row of data ?? []) {
+        const city = normalizeCityName(row.city);
+        if (!city || seen.has(city)) {
+          continue;
+        }
+        seen.add(city);
+        cities.push(city);
+      }
+
+      return cities.sort((left, right) => left.localeCompare(right, 'en-IN'));
     },
   };
 

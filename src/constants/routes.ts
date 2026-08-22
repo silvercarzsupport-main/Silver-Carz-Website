@@ -8,8 +8,8 @@
  *
  * Primary customer pages (nav):
  *   /                 Book a Car
- *   /car-pooling      Car Pooling
  *   /car-detailing    Car Detailing
+ *   /vendor           Vendor
  *   /about-us         About Us
  */
 
@@ -17,8 +17,8 @@ export const ROUTES = {
   // --- Customer portal (primary pages) ---
   home: '/',
   bookACar: '/',
-  carPooling: '/car-pooling',
   carDetailing: '/car-detailing',
+  vendor: '/vendor',
   aboutUs: '/about-us',
 
   // --- Customer account / workflow (not primary nav) ---

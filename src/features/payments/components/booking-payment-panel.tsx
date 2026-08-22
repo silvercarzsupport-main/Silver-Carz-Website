@@ -13,6 +13,7 @@ import { Loader2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { customerBookingConfirmationPath, customerBookingPath, ROUTES } from '@/constants/routes';
 import {
+  confirmBookingPayment,
   createBookingPaymentCheckout,
   markBookingPaymentCancelled,
   markBookingPaymentFailed,
@@ -20,7 +21,7 @@ import {
 import type { PaymentEligibility } from '@/features/payments/lib/eligibility';
 import { SelectedVehicleSummary } from '@/features/customer-booking/components/selected-vehicle-summary';
 import { calculateRentalDays } from '@/features/customer-booking/lib/estimate';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
 import type { BookingWithVehicle, PaymentSummary, RazorpayCheckoutSession } from '@/types';
 
 type BookingPaymentPanelProps = {
@@ -84,6 +85,7 @@ export function BookingPaymentPanel({ booking, eligibility, payments }: BookingP
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inFlightRef = useRef(false);
+  const checkoutSucceededRef = useRef(false);
 
   const durationDays =
     booking.duration != null
@@ -130,6 +132,9 @@ export function BookingPaymentPanel({ booking, eligibility, payments }: BookingP
           },
           modal: {
             ondismiss: () => {
+              if (checkoutSucceededRef.current) {
+                return;
+              }
               void markBookingPaymentCancelled({ paymentId: session.paymentId }).finally(() => {
                 setStatus('cancelled');
                 setErrorMessage('Payment was not completed. You can try again when ready.');
@@ -138,11 +143,42 @@ export function BookingPaymentPanel({ booking, eligibility, payments }: BookingP
               });
             },
           },
-          handler: (_response: RazorpaySuccessResponse) => {
-            // Browser callback is NOT proof of payment — C7 verifies authoritatively.
-            setStatus('idle');
-            inFlightRef.current = false;
-            router.push(`${customerBookingConfirmationPath(session.bookingId)}?payment=processing`);
+          handler: (response: RazorpaySuccessResponse) => {
+            checkoutSucceededRef.current = true;
+            const orderId = response.razorpay_order_id ?? session.orderId;
+            const paymentId = response.razorpay_payment_id ?? '';
+            const signature = response.razorpay_signature ?? '';
+
+            void confirmBookingPayment({
+              bookingId: session.bookingId,
+              razorpayOrderId: orderId,
+              razorpayPaymentId: paymentId,
+              razorpaySignature: signature,
+            })
+              .then((result) => {
+                if (result.success) {
+                  router.push(customerBookingConfirmationPath(session.bookingId));
+                  return;
+                }
+
+                checkoutSucceededRef.current = false;
+                setStatus('failed');
+                setErrorMessage(
+                  result.error.message ||
+                    'Payment could not be confirmed. Please try again or contact Silver Carz.',
+                );
+              })
+              .catch(() => {
+                checkoutSucceededRef.current = false;
+                setStatus('failed');
+                setErrorMessage(
+                  'Payment could not be confirmed. Please try again or contact Silver Carz.',
+                );
+              })
+              .finally(() => {
+                setStatus((current) => (current === 'opening' ? 'idle' : current));
+                inFlightRef.current = false;
+              });
           },
         });
 
@@ -174,6 +210,7 @@ export function BookingPaymentPanel({ booking, eligibility, payments }: BookingP
     }
 
     inFlightRef.current = true;
+    checkoutSucceededRef.current = false;
     setStatus('creating');
     setErrorMessage(null);
 
@@ -310,6 +347,16 @@ export function BookingPaymentPanel({ booking, eligibility, payments }: BookingP
               {formatCurrency(Number(booking.total_amount), { maximumFractionDigits: 0 })}
             </dd>
           </div>
+          {booking.payment_due_at ? (
+            <div>
+              <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Pay by
+              </dt>
+              <dd className="mt-1 text-sm font-semibold text-foreground">
+                {formatDateTime(booking.payment_due_at)}
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </section>
 

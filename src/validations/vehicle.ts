@@ -6,6 +6,8 @@
 
 import { z } from 'zod';
 
+import { normalizeCityName } from '@/config/fleet-cities';
+import { resolveIndianCity } from '@/config/indian-cities';
 import {
   fuelTypeSchema,
   isoDateSchema,
@@ -16,6 +18,20 @@ import {
   vehicleAvailabilityStatusSchema,
   vehicleNumberSchema,
 } from '@/validations/shared';
+
+const vehicleCitySchema = z
+  .string()
+  .trim()
+  .min(1, 'City is required.')
+  .superRefine((value, ctx) => {
+    if (!resolveIndianCity(value)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Choose a valid city from the list.',
+      });
+    }
+  })
+  .transform((value) => resolveIndianCity(value)!);
 
 /**
  * Shared vehicle field shapes without create-only defaults.
@@ -38,6 +54,7 @@ const vehicleFieldsSchema = z.object({
   availability_status: vehicleAvailabilityStatusSchema,
   image_path: optionalNullableStringSchema,
   is_active: z.boolean(),
+  city: vehicleCitySchema,
 });
 
 /**
@@ -60,6 +77,12 @@ export const vehicleListFiltersSchema = z.object({
   createdFrom: isoDateSchema.optional(),
   createdTo: isoDateSchema.optional(),
   cursor: z.string().trim().min(1).optional(),
+  city: z
+    .string()
+    .trim()
+    .max(80)
+    .optional()
+    .transform((value) => (value ? normalizeCityName(value) : undefined)),
 });
 
 export const vehicleSortFieldSchema = z.enum([

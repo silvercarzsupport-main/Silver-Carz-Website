@@ -3,7 +3,8 @@ import { Suspense } from 'react';
 
 import { BookACarSkeleton } from '@/components/customer/book-a-car/book-a-car-skeleton';
 import { BookACarView } from '@/components/customer/book-a-car/book-a-car-view';
-import { appConfig } from '@/config';
+import { appConfig, citiesMatch } from '@/config';
+import { readBookingCity } from '@/features/customer-location/lib/booking-city-cookie';
 import {
   getPublicVehicle,
   listPublicVehicles,
@@ -15,6 +16,8 @@ import {
 import { getAuthState } from '@/lib/auth';
 import type { PublicVehicle } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: `Book a Car | ${appConfig.companyName}`,
   description: 'Browse the Silver Carz fleet and select a car to book.',
@@ -22,7 +25,7 @@ export const metadata: Metadata = {
 
 /**
  * Root customer page — Book a Car (single source of truth).
- * C1: browse, filter, select, summary. No booking submission yet.
+ * Browse, filter, select, summary. Fleet is scoped to the visitor's booking city.
  */
 export default async function BookACarPage({
   searchParams,
@@ -44,11 +47,23 @@ async function BookACarPageContent({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const state = parseCustomerBookACarUrlState(searchParams);
-  const [{ profile }, result] = await Promise.all([
-    getAuthState(),
-    listPublicVehicles(toPublicVehicleListQuery(state)),
-  ]);
-  const isAuthenticated = Boolean(profile?.isActive);
+  const [authState, bookingCity] = await Promise.all([getAuthState(), readBookingCity()]);
+  const isAuthenticated = Boolean(authState.profile?.isActive);
+
+  if (!bookingCity) {
+    return (
+      <BookACarView
+        state={state}
+        vehicles={[]}
+        meta={null}
+        selectedVehicle={null}
+        isAuthenticated={isAuthenticated}
+        bookingCity={null}
+      />
+    );
+  }
+
+  const result = await listPublicVehicles(toPublicVehicleListQuery(state, bookingCity));
 
   if (!result.success) {
     return (
@@ -59,12 +74,13 @@ async function BookACarPageContent({
         selectedVehicle={null}
         isAuthenticated={isAuthenticated}
         errorMessage={result.error.message}
+        bookingCity={bookingCity}
       />
     );
   }
 
   const vehicles = result.data.data;
-  const selectedVehicle = await resolveSelectedVehicle(vehicles, state.vehicleId);
+  const selectedVehicle = await resolveSelectedVehicle(vehicles, state.vehicleId, bookingCity);
 
   return (
     <BookACarView
@@ -73,6 +89,7 @@ async function BookACarPageContent({
       meta={result.data.meta}
       selectedVehicle={selectedVehicle}
       isAuthenticated={isAuthenticated}
+      bookingCity={bookingCity}
     />
   );
 }
@@ -80,6 +97,7 @@ async function BookACarPageContent({
 async function resolveSelectedVehicle(
   vehicles: readonly PublicVehicle[],
   vehicleId: string | null,
+  bookingCity: string,
 ): Promise<PublicVehicle | null> {
   if (!vehicleId) {
     return null;
@@ -87,9 +105,13 @@ async function resolveSelectedVehicle(
 
   const onPage = vehicles.find((vehicle) => vehicle.id === vehicleId);
   if (onPage) {
-    return onPage;
+    return citiesMatch(onPage.city, bookingCity) ? onPage : null;
   }
 
   const selected = await getPublicVehicle(vehicleId);
-  return selected.success ? selected.data : null;
+  if (!selected.success || !citiesMatch(selected.data.city, bookingCity)) {
+    return null;
+  }
+
+  return selected.data;
 }

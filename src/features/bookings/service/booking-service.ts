@@ -25,6 +25,7 @@ import {
   getBookingDocumentRepository,
   type BookingDocumentRepository,
 } from '@/features/booking-documents/repository/booking-document-repository';
+import { computePaymentDueAt } from '@/features/bookings/lib/payment-window';
 import {
   createBookingRepository,
   getBookingRepository,
@@ -55,7 +56,12 @@ import {
   type AvailabilityService,
 } from '@/features/vehicles/service/availability.service';
 import { PERMISSIONS, requirePermission, type AuthUser } from '@/lib/auth';
+import { getProfileById } from '@/lib/auth/profile';
 import { AppError } from '@/lib/errors';
+import {
+  notifyBookingApproved,
+  notifyBookingRejected,
+} from '@/lib/notifications/booking-notifications';
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import { fromPromise } from '@/services';
 import type {
@@ -522,6 +528,7 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
         const approved = await repository.updateIfStatus(id, BOOKING_STATUSES.draft, {
           status,
           rejection_reason: null,
+          payment_due_at: computePaymentDueAt(existing.delivery_date),
         });
 
         if (!approved) {
@@ -529,6 +536,18 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
         }
 
         await syncVehicleAvailability(existing.vehicle_id);
+
+        const customerId = approved.created_by;
+        if (customerId) {
+          const customerProfile = await getProfileById(customerId);
+          if (customerProfile?.email) {
+            notifyBookingApproved({
+              booking: approved,
+              customerEmail: customerProfile.email,
+            });
+          }
+        }
+
         return approved;
       });
     },
@@ -566,6 +585,19 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
         }
 
         await syncVehicleAvailability(existing.vehicle_id);
+
+        const customerId = denied.created_by;
+        if (customerId) {
+          const customerProfile = await getProfileById(customerId);
+          if (customerProfile?.email) {
+            notifyBookingRejected({
+              booking: denied,
+              customerEmail: customerProfile.email,
+              reason: trimmedReason,
+            });
+          }
+        }
+
         return denied;
       });
     },

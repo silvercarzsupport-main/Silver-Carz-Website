@@ -13,6 +13,8 @@ import 'server-only';
 
 import { addDays, parseISO } from 'date-fns';
 
+import { datesOverlap } from '@/features/bookings/lib/date-overlap';
+import { todayIsoIst } from '@/lib/dates/ist';
 import {
   createBookingConflictError,
   createInvalidBookingDatesError,
@@ -108,28 +110,7 @@ export interface ConflictService {
   ): Promise<ApiResponse<NextAvailableDateResult>>;
 }
 
-/**
- * Closed-interval overlap (inclusive dates).
- *
- * A conflict exists when:
- *   existing.delivery_date <= new.return_date
- *   AND existing.return_date >= new.delivery_date
- *
- * Detects full, partial, inside, outside, same-start, same-end, and identical
- * windows — including same-day hires (delivery === return).
- *
- * Equivalent intent to the continuous-time form
- * `start < otherEnd AND end > otherStart` for half-open intervals; date-only
- * rental windows are closed, so inclusive comparisons are required.
- */
-export function datesOverlap(
-  existingDelivery: string,
-  existingReturn: string,
-  newDelivery: string,
-  newReturn: string,
-): boolean {
-  return existingDelivery <= newReturn && existingReturn >= newDelivery;
-}
+export { datesOverlap } from '@/features/bookings/lib/date-overlap';
 
 export function isConflictBlockingStatus(status: string | null | undefined): boolean {
   return typeof status === 'string' && BLOCKING_STATUS_SET.has(status);
@@ -148,8 +129,8 @@ function assertValidWindow(deliveryDate: string, returnDate: string): void {
 function toConflict(booking: Booking): BookingConflict {
   return {
     bookingId: booking.id,
-    invoiceNumber: booking.invoice_number,
-    customerName: booking.customer_name,
+    invoiceNumber: booking.invoice_number ?? '',
+    customerName: booking.customer_name ?? '',
     status: booking.status,
     deliveryDate: booking.delivery_date,
     returnDate: booking.return_date,
@@ -178,7 +159,7 @@ function buildConflictMessage(conflict: BookingConflict): string {
 }
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayIsoIst();
 }
 
 function addOneDayIso(isoDate: string): string {

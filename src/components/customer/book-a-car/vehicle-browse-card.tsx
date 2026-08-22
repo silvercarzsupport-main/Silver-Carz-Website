@@ -1,6 +1,6 @@
 'use client';
 
-import { CarFront, Fuel, Gauge } from 'lucide-react';
+import { CarFront, Fuel, Gauge, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -105,6 +105,12 @@ export function VehicleBrowseCard({
             <Gauge className="size-3.5" aria-hidden="true" />
             {TRANSMISSION_TYPE_LABELS[vehicle.transmission_type]}
           </span>
+          {vehicle.city ? (
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="size-3.5" aria-hidden="true" />
+              {vehicle.city}
+            </span>
+          ) : null}
         </div>
       </div>
 

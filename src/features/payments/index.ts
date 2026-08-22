@@ -3,6 +3,7 @@
  */
 
 export {
+  confirmBookingPayment,
   createBookingPaymentCheckout,
   getBookingPaymentPageData,
   listBookingPaymentsForStaff,

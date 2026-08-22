@@ -81,6 +81,7 @@ export type Database = {
           availability_status: Database['public']['Enums']['vehicle_availability'];
           image_path: string | null;
           is_active: boolean;
+          city: string;
           created_at: string;
           updated_at: string;
         };
@@ -96,6 +97,7 @@ export type Database = {
           availability_status?: Database['public']['Enums']['vehicle_availability'];
           image_path?: string | null;
           is_active?: boolean;
+          city?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -111,6 +113,7 @@ export type Database = {
           availability_status?: Database['public']['Enums']['vehicle_availability'];
           image_path?: string | null;
           is_active?: boolean;
+          city?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -170,6 +173,7 @@ export type Database = {
           status: Database['public']['Enums']['booking_status'];
           notes: string | null;
           rejection_reason: string | null;
+          payment_due_at: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -200,6 +204,7 @@ export type Database = {
           status?: Database['public']['Enums']['booking_status'];
           notes?: string | null;
           rejection_reason?: string | null;
+          payment_due_at?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -230,6 +235,7 @@ export type Database = {
           status?: Database['public']['Enums']['booking_status'];
           notes?: string | null;
           rejection_reason?: string | null;
+          payment_due_at?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -425,8 +431,8 @@ export type Database = {
           status: Database['public']['Enums']['booking_status'];
           delivery_date: string;
           return_date: string;
-          invoice_number: string;
-          customer_name: string;
+          invoice_number: string | null;
+          customer_name: string | null;
         }[];
       };
       mark_booking_documents_submitted: {
@@ -461,6 +467,28 @@ export type Database = {
           p_provider_payment_id: string;
         };
         Returns: Database['public']['Tables']['payments']['Row'];
+      };
+      complete_booking_payment: {
+        Args: {
+          p_provider_order_id: string;
+          p_provider_payment_id: string;
+          p_amount: number;
+          p_currency: string;
+          p_payment_method?: Database['public']['Enums']['payment_method'];
+        };
+        Returns: Database['public']['Tables']['payments']['Row'];
+      };
+      mark_payment_attempt_failed_by_order: {
+        Args: {
+          p_provider_order_id: string;
+          p_provider_payment_id?: string | null;
+          p_failure_reason?: string | null;
+        };
+        Returns: Database['public']['Tables']['payments']['Row'];
+      };
+      release_overdue_unpaid_bookings: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
       };
       next_invoice_sequence: {
         Args: {

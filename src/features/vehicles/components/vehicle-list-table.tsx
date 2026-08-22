@@ -117,6 +117,13 @@ export function VehicleListTable({ data, state }: VehicleListTableProps) {
         ),
       },
       {
+        id: 'city',
+        accessorKey: 'city',
+        header: 'City',
+        enableSorting: false,
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.city}</span>,
+      },
+      {
         id: 'default_daily_rate',
         accessorKey: 'default_daily_rate',
         header: 'Daily Charge',
@@ -324,6 +331,10 @@ export function VehicleListTable({ data, state }: VehicleListTableProps) {
                       <div className="min-w-0">
                         <dt className="text-xs text-muted-foreground">Fuel type</dt>
                         <dd className="truncate">{FUEL_TYPE_LABELS[vehicle.fuel_type]}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-xs text-muted-foreground">City</dt>
+                        <dd className="truncate">{vehicle.city}</dd>
                       </div>
                       <div className="min-w-0">
                         <dt className="text-xs text-muted-foreground">Daily charge</dt>

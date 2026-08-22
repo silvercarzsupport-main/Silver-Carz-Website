@@ -50,16 +50,22 @@ function stepToProgress(step: BookingWizardStep): number {
   return 3;
 }
 
+function hasCompleteDates(deliveryDate: string, returnDate: string): boolean {
+  return Boolean(deliveryDate && returnDate && returnDate >= deliveryDate);
+}
+
 export function BookingRequestWizard({
   vehicle,
   initialCustomerName,
   customerEmail,
   initialStep = 'dates',
+  initialCity = '',
 }: {
   readonly vehicle: PublicVehicle;
   readonly initialCustomerName: string;
   readonly customerEmail: string;
   readonly initialStep?: BookingWizardStep;
+  readonly initialCity?: string;
 }) {
   const router = useRouter();
   const errorId = useId();
@@ -87,7 +93,7 @@ export function BookingRequestWizard({
       customerName: initialCustomerName,
       contactNumber: '',
       address: '',
-      city: '',
+      city: initialCity || vehicle.city || '',
       state: '',
       zipCode: '',
       placeToVisit: '',
@@ -109,15 +115,19 @@ export function BookingRequestWizard({
       customerName: draft.customerName || initialCustomerName,
       contactNumber: draft.contactNumber ?? '',
       address: draft.address ?? '',
-      city: draft.city ?? '',
+      city: draft.city || initialCity || vehicle.city || '',
       state: draft.state ?? '',
       zipCode: draft.zipCode ?? '',
       placeToVisit: draft.placeToVisit ?? '',
     });
-  }, [vehicle.id, initialCustomerName, reset]);
+  }, [vehicle.id, vehicle.city, initialCustomerName, initialCity, reset]);
 
   const deliveryDate = useWatch({ control, name: 'deliveryDate' }) ?? '';
   const returnDate = useWatch({ control, name: 'returnDate' }) ?? '';
+  const visibleStep: BookingWizardStep =
+    (step === 'details' || step === 'review') && !hasCompleteDates(deliveryDate, returnDate)
+      ? 'dates'
+      : step;
   const mode = useWatch({ control, name: 'mode' }) ?? 'with_driver';
   const customerName = useWatch({ control, name: 'customerName' }) ?? '';
   const contactNumber = useWatch({ control, name: 'contactNumber' }) ?? '';
@@ -229,27 +239,31 @@ export function BookingRequestWizard({
 
   return (
     <>
-      <BookingProgressSteps activeStep={stepToProgress(step)} />
+      <BookingProgressSteps activeStep={stepToProgress(visibleStep)} />
 
       <CustomerContainer className="max-w-5xl py-8 sm:py-12">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="min-w-0">
             <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
               Booking ·{' '}
-              {step === 'dates' ? 'Select dates' : step === 'details' ? 'Your details' : 'Review'}
+              {visibleStep === 'dates'
+                ? 'Select dates'
+                : visibleStep === 'details'
+                  ? 'Your details'
+                  : 'Review'}
             </p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground uppercase sm:text-4xl">
-              {step === 'dates'
+              {visibleStep === 'dates'
                 ? 'Select dates'
-                : step === 'details'
+                : visibleStep === 'details'
                   ? 'Your details'
                   : 'Review request'}
             </h1>
             <div className="mt-3 h-1 w-12 bg-primary" aria-hidden="true" />
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              {step === 'dates'
+              {visibleStep === 'dates'
                 ? 'Pick your dates on the calendar. Unavailable days are marked in red.'
-                : step === 'details'
+                : visibleStep === 'details'
                   ? 'Confirm how we can reach you for this rental request.'
                   : 'Check everything carefully, then send your request for Silver Carz approval.'}
             </p>
@@ -269,7 +283,7 @@ export function BookingRequestWizard({
             >
               <input type="hidden" {...register('vehicleId')} />
 
-              {step === 'dates' ? (
+              {visibleStep === 'dates' ? (
                 <div className="space-y-5 rounded-lg border border-border bg-card p-5 sm:p-6">
                   <input type="hidden" {...register('deliveryDate')} />
                   <input type="hidden" {...register('returnDate')} />
@@ -369,7 +383,7 @@ export function BookingRequestWizard({
                 </div>
               ) : null}
 
-              {step === 'details' ? (
+              {visibleStep === 'details' ? (
                 <div className="space-y-5 rounded-lg border border-border bg-card p-5 sm:p-6">
                   <div className="grid gap-2">
                     <Label htmlFor="customerName">Full name</Label>
@@ -508,7 +522,7 @@ export function BookingRequestWizard({
                 </div>
               ) : null}
 
-              {step === 'review' ? (
+              {visibleStep === 'review' ? (
                 <div className="space-y-5 rounded-lg border border-border bg-card p-5 sm:p-6">
                   <SelectedVehicleSummary vehicle={vehicle} />
 

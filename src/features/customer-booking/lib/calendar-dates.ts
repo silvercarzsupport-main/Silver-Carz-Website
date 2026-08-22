@@ -1,45 +1,52 @@
 /**
  * Pure date helpers for the customer availability calendar.
+ * All calendar days are IST business dates.
  */
 
 import {
-  addDays,
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  format,
-  isBefore,
-  parseISO,
-  startOfDay,
-  startOfMonth,
-} from 'date-fns';
+  addMonthsToMonthStart,
+  endOfMonthIso,
+  formatIsoMonthTitle,
+  isoToUtcNoon,
+  startOfMonthIso,
+  todayIsoIst,
+} from '@/lib/dates/ist';
+
+export {
+  addMonthsToMonthStart,
+  endOfMonthIso,
+  formatIsoMonthTitle,
+  isoToUtcNoon,
+  startOfMonthIso,
+  todayIsoIst,
+};
+
+/** @deprecated Use `todayIsoIst` — booking dates are IST, not the device timezone. */
+export const todayIsoLocal = todayIsoIst;
 
 export function toIsoDate(date: Date): string {
-  return format(date, 'yyyy-MM-dd');
+  return date.toISOString().slice(0, 10);
 }
 
-export function todayLocalDate(): Date {
-  return startOfDay(new Date());
+export function monthKeyFromIso(isoDate: string): string {
+  return isoDate.slice(0, 7);
 }
 
-export function todayIsoLocal(): string {
-  return toIsoDate(todayLocalDate());
-}
-
-export function monthKey(date: Date): string {
-  return format(date, 'yyyy-MM');
-}
-
-/** Current calendar month (local) and the single allowed next month. */
-export function getAllowedCalendarMonths(asOf: Date = todayLocalDate()): {
-  readonly currentMonth: Date;
-  readonly nextMonth: Date;
+/** Current calendar month (IST) and the single allowed next month. */
+export function getAllowedCalendarMonths(asOfIso: string = todayIsoIst()): {
+  readonly currentMonth: string;
+  readonly nextMonth: string;
 } {
-  const currentMonth = startOfMonth(asOf);
+  const currentMonth = startOfMonthIso(asOfIso);
   return {
     currentMonth,
-    nextMonth: addMonths(currentMonth, 1),
+    nextMonth: addMonthsToMonthStart(currentMonth, 1),
   };
+}
+
+/** Last bookable day: end of next IST calendar month. */
+export function getBookingHorizonEndIso(asOfIso: string = todayIsoIst()): string {
+  return endOfMonthIso(getAllowedCalendarMonths(asOfIso).nextMonth);
 }
 
 export function expandInclusiveDateRange(deliveryDate: string, returnDate: string): string[] {
@@ -47,10 +54,17 @@ export function expandInclusiveDateRange(deliveryDate: string, returnDate: strin
     return [];
   }
 
-  return eachDayOfInterval({
-    start: parseISO(deliveryDate),
-    end: parseISO(returnDate),
-  }).map(toIsoDate);
+  const days: string[] = [];
+  let cursor = deliveryDate;
+
+  while (cursor <= returnDate) {
+    days.push(cursor);
+    const next = isoToUtcNoon(cursor);
+    next.setUTCDate(next.getUTCDate() + 1);
+    cursor = next.toISOString().slice(0, 10);
+  }
+
+  return days;
 }
 
 export function rangeContainsBookedDate(
@@ -61,32 +75,40 @@ export function rangeContainsBookedDate(
   return expandInclusiveDateRange(deliveryDate, returnDate).some((day) => bookedDates.has(day));
 }
 
-export function buildMonthCells(month: Date): Array<{
+export function buildMonthCells(monthStartIso: string): Array<{
   readonly isoDate: string | null;
   readonly dayNumber: number | null;
 }> {
-  const start = startOfMonth(month);
-  const end = endOfMonth(month);
-  const days = eachDayOfInterval({ start, end });
-  // Monday-first grid to match common rental calendars; Sunday = 0 → offset 6
-  const mondayOffset = (start.getDay() + 6) % 7;
+  const startIso = startOfMonthIso(monthStartIso);
+  const endIso = endOfMonthIso(startIso);
+  const start = isoToUtcNoon(startIso);
+  const mondayOffset = (start.getUTCDay() + 6) % 7;
   const leading: Array<{ isoDate: string | null; dayNumber: number | null }> = Array.from(
     { length: mondayOffset },
     () => ({ isoDate: null, dayNumber: null }),
   );
 
-  const body = days.map((day) => ({
-    isoDate: toIsoDate(day),
-    dayNumber: day.getDate(),
-  }));
+  const body: Array<{ isoDate: string; dayNumber: number }> = [];
+  for (const isoDate of expandInclusiveDateRange(startIso, endIso)) {
+    body.push({
+      isoDate,
+      dayNumber: isoToUtcNoon(isoDate).getUTCDate(),
+    });
+  }
 
   return [...leading, ...body];
 }
 
-export function isPastDate(isoDate: string, asOf: Date = todayLocalDate()): boolean {
-  return isBefore(parseISO(isoDate), startOfDay(asOf));
+export function isPastDate(isoDate: string, todayIso: string = todayIsoIst()): boolean {
+  return isoDate < todayIso;
+}
+
+export function isWithinBookingHorizon(isoDate: string, asOfIso: string = todayIsoIst()): boolean {
+  return isoDate >= asOfIso && isoDate <= getBookingHorizonEndIso(asOfIso);
 }
 
 export function addDaysIso(isoDate: string, amount: number): string {
-  return toIsoDate(addDays(parseISO(isoDate), amount));
+  const next = isoToUtcNoon(isoDate);
+  next.setUTCDate(next.getUTCDate() + amount);
+  return next.toISOString().slice(0, 10);
 }

@@ -196,7 +196,7 @@ export function createBookingDocumentService(
 
         const documentType = parseDocumentType(input.documentType);
         const booking = await loadOwnedEligibleBooking(actor, input.bookingId);
-        validateBookingDocumentFile(input.file);
+        const mimeType = await validateBookingDocumentFile(input.file);
 
         const client = await getClient();
         const documents = await getDocuments();
@@ -206,12 +206,13 @@ export function createBookingDocumentService(
           customerId: actor.id,
           bookingId: booking.id,
           documentType,
-          mimeType: input.file.type,
+          mimeType,
         });
 
         await uploadBookingDocumentObject({
           path: nextPath,
           file: input.file,
+          contentType: mimeType,
           client,
         });
 
@@ -221,7 +222,7 @@ export function createBookingDocumentService(
           document_type: documentType,
           file_name: sanitizeOriginalFileName(input.file.name),
           storage_path: nextPath,
-          mime_type: input.file.type,
+          mime_type: mimeType,
           file_size: input.file.size,
         };
 

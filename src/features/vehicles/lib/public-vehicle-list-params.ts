@@ -1,7 +1,7 @@
 /**
  * Customer Book a Car URL state ↔ VehicleListQuery mapping.
  *
- * City filtering is omitted — vehicles have no city/location column today.
+ * Booking city is cookie-backed (location prompt), not a public URL param.
  */
 
 import type { VehicleListQuery } from '@/types/vehicle';
@@ -61,12 +61,16 @@ export function parseCustomerBookACarUrlState(
   };
 }
 
-export function toPublicVehicleListQuery(state: CustomerBookACarUrlState): VehicleListQuery {
+export function toPublicVehicleListQuery(
+  state: CustomerBookACarUrlState,
+  city: string,
+): VehicleListQuery {
   const priceBounds = state.price === 'all' ? {} : PRICE_BOUNDS[state.price];
 
   return {
     isActive: true,
     available: state.availability === 'available' ? true : undefined,
+    city,
     ...priceBounds,
     page: state.page,
     pageSize: 12,

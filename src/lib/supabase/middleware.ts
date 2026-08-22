@@ -21,6 +21,9 @@ import {
   resolveCustomerPostLoginPath,
   resolvePostLoginPath,
 } from '@/lib/auth/route-guards';
+import { APP_ROLES } from '@/lib/auth/roles';
+import { isStaffRole } from '@/lib/auth/roles';
+import { ROUTES } from '@/constants/routes';
 import { supabaseConfig } from '@/lib/supabase/config';
 import type { Database } from '@/types/database';
 
@@ -61,6 +64,31 @@ function copySessionCookies(from: NextResponse, to: NextResponse): NextResponse 
   return to;
 }
 
+type MiddlewareProfile = {
+  readonly role: string;
+  readonly isActive: boolean;
+};
+
+async function loadMiddlewareProfile(
+  supabase: ReturnType<typeof createServerClient<Database>>,
+  userId: string,
+): Promise<MiddlewareProfile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('role, is_active')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    role: data.role,
+    isActive: data.is_active,
+  };
+}
+
 function redirectWithSession(request: NextRequest, sessionResponse: NextResponse, href: string) {
   const redirectResponse = NextResponse.redirect(new URL(href, request.url));
   return copySessionCookies(sessionResponse, redirectResponse);
@@ -94,6 +122,15 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   if (!user && isCustomerProtectedRoute(pathname)) {
     return redirectWithSession(request, sessionResponse, buildCustomerLoginRedirectPath(nextPath));
+  }
+
+  if (user && isCustomerProtectedRoute(pathname)) {
+    const profile = await loadMiddlewareProfile(supabase, user.id);
+
+    if (!profile?.isActive || profile.role !== APP_ROLES.customer) {
+      const destination = isStaffRole(profile?.role) ? ROUTES.dashboard : ROUTES.home;
+      return redirectWithSession(request, sessionResponse, destination);
+    }
   }
 
   if (user && isAdminAuthRoute(pathname)) {

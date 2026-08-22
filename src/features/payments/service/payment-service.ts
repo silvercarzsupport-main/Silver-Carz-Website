@@ -1,8 +1,8 @@
 /**
- * Customer booking payment service (C6).
+ * Customer booking payment service (C6 checkout + C7 verification).
  *
- * Creates Razorpay orders server-side, records pending attempts, and never
- * marks bookings confirmed or payments paid (C7).
+ * Orders are created server-side. Paid status is set only after Razorpay
+ * capture is verified (checkout signature or webhook + Payments API).
  */
 
 import 'server-only';
@@ -21,12 +21,17 @@ import {
   createPaymentNotFoundError,
   createPaymentUnauthorizedError,
   createPaymentValidationError,
+  createPaymentVerificationError,
   PAYMENT_ERROR_CODES,
 } from '@/features/payments/errors';
 import { getPaymentEligibility } from '@/features/payments/lib/eligibility';
 import {
   createRazorpayOrder,
+  fetchRazorpayPayment,
+  isCapturedRazorpayPayment,
+  mapRazorpayMethodToPaymentMethod,
   toRazorpayAmountPaise,
+  verifyRazorpayCheckoutSignature,
 } from '@/features/payments/lib/razorpay-gateway';
 import {
   createPaymentRepository,
@@ -35,13 +40,16 @@ import {
 } from '@/features/payments/repository/payment-repository';
 import { APP_ROLES, requireUser, type AuthUser } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
+import { notifyBookingPaymentConfirmed } from '@/lib/notifications/booking-notifications';
 import type { TypedSupabaseClient } from '@/lib/supabase';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { fromPromise } from '@/services';
 import type {
   ApiResponse,
   BookingWithVehicle,
   Payment,
+  PaymentMethod,
   PaymentSummary,
   RazorpayCheckoutSession,
 } from '@/types';
@@ -64,6 +72,21 @@ export type PaymentPageData = {
 export type PaymentService = {
   getPaymentPageData(bookingId: string): Promise<ApiResponse<PaymentPageData>>;
   createCheckoutSession(bookingId: string): Promise<ApiResponse<RazorpayCheckoutSession>>;
+  confirmCheckout(input: {
+    readonly bookingId: string;
+    readonly razorpayOrderId: string;
+    readonly razorpayPaymentId: string;
+    readonly razorpaySignature: string;
+  }): Promise<ApiResponse<PaymentSummary>>;
+  completeCapturedGatewayPayment(input: {
+    readonly razorpayOrderId: string;
+    readonly razorpayPaymentId: string;
+  }): Promise<ApiResponse<PaymentSummary>>;
+  markGatewayAttemptFailed(input: {
+    readonly razorpayOrderId: string;
+    readonly razorpayPaymentId?: string | null;
+    readonly reason?: string | null;
+  }): Promise<ApiResponse<PaymentSummary>>;
   markAttemptFailed(input: {
     readonly paymentId: string;
     readonly reason?: string | null;
@@ -94,8 +117,13 @@ function mapRpcError(error: unknown): AppError {
   if (/Payment already completed/i.test(message)) {
     return createPaymentAlreadyPaidError();
   }
-  if (/not eligible for payment/i.test(message)) {
-    return createPaymentIneligibleError();
+  if (/Payment window has expired/i.test(message)) {
+    return createPaymentIneligibleError(
+      'The payment window for this booking has ended. Contact Silver Carz if you still need this car.',
+    );
+  }
+  if (/Payment amount does not match/i.test(message)) {
+    return createPaymentInvalidAmountError();
   }
   if (/Booking not found|Payment not found/i.test(message)) {
     return createPaymentBookingNotFoundError();
@@ -154,6 +182,122 @@ export function createPaymentService(deps: PaymentServiceDeps = {}): PaymentServ
     }
 
     return data as BookingWithVehicle;
+  }
+
+  async function completeVerifiedPayment(input: {
+    readonly orderId: string;
+    readonly paymentId: string;
+    readonly amountInr: number;
+    readonly currency: string;
+    readonly method: PaymentMethod;
+  }): Promise<Payment> {
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await admin.rpc('complete_booking_payment', {
+      p_provider_order_id: input.orderId,
+      p_provider_payment_id: input.paymentId,
+      p_amount: input.amountInr,
+      p_currency: input.currency,
+      p_payment_method: input.method,
+    });
+
+    if (error) {
+      throw mapRpcError(error);
+    }
+
+    return data as Payment;
+  }
+
+  async function loadBookingForNotification(bookingId: string): Promise<BookingWithVehicle | null> {
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await admin
+      .from('bookings')
+      .select(
+        '*, vehicle:vehicles(id, vehicle_name, vehicle_number, image_path, availability_status, is_active, fuel_type, default_daily_rate, brand, color, transmission_type)',
+      )
+      .eq('id', bookingId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data as BookingWithVehicle;
+  }
+
+  async function loadCustomerEmail(userId: string): Promise<string | null> {
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await admin
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error || !data?.email) {
+      return null;
+    }
+
+    return data.email;
+  }
+
+  async function maybeNotifyPaymentConfirmed(input: {
+    readonly wasAlreadyPaid: boolean;
+    readonly payment: Payment;
+  }): Promise<void> {
+    if (input.wasAlreadyPaid || input.payment.status !== BOOKING_PAYMENT_STATUSES.paid) {
+      return;
+    }
+
+    const booking = await loadBookingForNotification(input.payment.booking_id);
+    if (!booking) {
+      return;
+    }
+
+    const customerEmail = await loadCustomerEmail(input.payment.customer_id);
+    if (!customerEmail) {
+      return;
+    }
+
+    notifyBookingPaymentConfirmed({
+      booking,
+      customerEmail,
+      amountPaid: Number(input.payment.amount),
+    });
+  }
+
+  async function verifyCapturedGatewayPayment(input: {
+    readonly razorpayOrderId: string;
+    readonly razorpayPaymentId: string;
+  }): Promise<Payment> {
+    const admin = createSupabaseAdminClient();
+    const { data: existingAttempt } = await admin
+      .from('payments')
+      .select('status')
+      .eq('provider_order_id', input.razorpayOrderId)
+      .maybeSingle();
+
+    const wasAlreadyPaid = existingAttempt?.status === BOOKING_PAYMENT_STATUSES.paid;
+
+    const captured = await fetchRazorpayPayment(input.razorpayPaymentId);
+
+    if (!isCapturedRazorpayPayment(captured.status)) {
+      throw createPaymentVerificationError('Payment has not been captured yet.');
+    }
+
+    if (captured.orderId !== input.razorpayOrderId) {
+      throw createPaymentVerificationError();
+    }
+
+    const row = await completeVerifiedPayment({
+      orderId: captured.orderId,
+      paymentId: captured.id,
+      amountInr: captured.amountInr,
+      currency: captured.currency,
+      method: mapRazorpayMethodToPaymentMethod(captured.method),
+    });
+
+    await maybeNotifyPaymentConfirmed({ wasAlreadyPaid, payment: row });
+
+    return row;
   }
 
   return {
@@ -288,6 +432,80 @@ export function createPaymentService(deps: PaymentServiceDeps = {}): PaymentServ
           customerContact: booking.contact_number,
           description: `${appConfig.companyName} booking ${booking.invoice_number}`,
         } satisfies RazorpayCheckoutSession;
+      });
+    },
+
+    confirmCheckout(input) {
+      return fromPromise(async () => {
+        if (
+          !input.bookingId?.trim() ||
+          !input.razorpayOrderId?.trim() ||
+          !input.razorpayPaymentId?.trim()
+        ) {
+          throw createPaymentValidationError('Payment confirmation details are required.');
+        }
+
+        const user = await requireCustomer(requireUserFn);
+        const client = await getClient();
+        await loadOwnBookingWithVehicle(client, input.bookingId, user.id);
+        const repository = await getRepository();
+        const payments = await repository.listForBooking(input.bookingId);
+        const attempt = payments.find(
+          (payment) => payment.provider_order_id === input.razorpayOrderId,
+        );
+
+        if (!attempt || attempt.customer_id !== user.id) {
+          throw createPaymentVerificationError();
+        }
+
+        const signatureOk = verifyRazorpayCheckoutSignature({
+          orderId: input.razorpayOrderId,
+          paymentId: input.razorpayPaymentId,
+          signature: input.razorpaySignature,
+        });
+
+        if (!signatureOk) {
+          throw createPaymentVerificationError();
+        }
+
+        const row = await verifyCapturedGatewayPayment({
+          razorpayOrderId: input.razorpayOrderId,
+          razorpayPaymentId: input.razorpayPaymentId,
+        });
+
+        return toPaymentSummary(row);
+      });
+    },
+
+    completeCapturedGatewayPayment(input) {
+      return fromPromise(async () => {
+        if (!input.razorpayOrderId?.trim() || !input.razorpayPaymentId?.trim()) {
+          throw createPaymentValidationError('Payment confirmation details are required.');
+        }
+
+        const row = await verifyCapturedGatewayPayment(input);
+        return toPaymentSummary(row);
+      });
+    },
+
+    markGatewayAttemptFailed(input) {
+      return fromPromise(async () => {
+        if (!input.razorpayOrderId?.trim()) {
+          throw createPaymentValidationError('Payment confirmation details are required.');
+        }
+
+        const admin = createSupabaseAdminClient();
+        const { data, error } = await admin.rpc('mark_payment_attempt_failed_by_order', {
+          p_provider_order_id: input.razorpayOrderId,
+          p_provider_payment_id: input.razorpayPaymentId ?? null,
+          p_failure_reason: input.reason ?? 'Payment failed at the gateway.',
+        });
+
+        if (error) {
+          throw mapRpcError(error);
+        }
+
+        return toPaymentSummary(data as Payment);
       });
     },
 

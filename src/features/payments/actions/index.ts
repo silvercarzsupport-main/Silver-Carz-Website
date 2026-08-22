@@ -20,6 +20,15 @@ export async function createBookingPaymentCheckout(
   return getPaymentService().createCheckoutSession(bookingId);
 }
 
+export async function confirmBookingPayment(input: {
+  readonly bookingId: string;
+  readonly razorpayOrderId: string;
+  readonly razorpayPaymentId: string;
+  readonly razorpaySignature: string;
+}): Promise<ApiResponse<PaymentSummary>> {
+  return getPaymentService().confirmCheckout(input);
+}
+
 export async function markBookingPaymentFailed(input: {
   readonly paymentId: string;
   readonly reason?: string | null;

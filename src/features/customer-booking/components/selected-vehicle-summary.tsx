@@ -18,6 +18,7 @@ export function SelectedVehicleSummary({
     | 'default_daily_rate'
     | 'brand'
     | 'color'
+    | 'city'
   >;
   readonly className?: string;
   readonly compact?: boolean;
@@ -46,7 +47,8 @@ export function SelectedVehicleSummary({
           {vehicle.vehicle_name}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {[vehicle.brand, vehicle.color].filter(Boolean).join(' · ') || 'Silver Carz fleet'}
+          {[vehicle.brand, vehicle.color, vehicle.city].filter(Boolean).join(' · ') ||
+            'Silver Carz fleet'}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
           {FUEL_TYPE_LABELS[vehicle.fuel_type]} ·{' '}

@@ -31,7 +31,10 @@ export function VehicleDetailOverview({ vehicle, availability }: VehicleDetailOv
               <VehicleStatusBadge isActive={vehicle.is_active} />
               {availability ? <VehicleAvailabilityBadge availability={availability} /> : null}
             </div>
-            <p className="text-sm text-muted-foreground tabular-nums">{vehicle.vehicle_number}</p>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {vehicle.vehicle_number}
+              {vehicle.city ? ` · ${vehicle.city}` : ''}
+            </p>
           </div>
 
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -41,6 +44,7 @@ export function VehicleDetailOverview({ vehicle, availability }: VehicleDetailOv
               label="Registration Number"
               value={<span className="tabular-nums">{vehicle.vehicle_number}</span>}
             />
+            <VehicleDetailField label="City" value={vehicle.city} />
           </dl>
         </div>
       </div>

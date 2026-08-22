@@ -8,6 +8,7 @@
  * - booking_amount > 0 or paid payment → already collected (no new Pay Now)
  */
 
+import { isPaymentWindowOpen } from '@/features/bookings/lib/payment-window';
 import { pricingFromBooking } from '@/features/bookings/service/pricing.service';
 import type { Booking, BookingPaymentStatus, Payment } from '@/types';
 import { BOOKING_PAYMENT_STATUSES, BOOKING_STATUSES } from '@/types/enums';
@@ -19,6 +20,7 @@ export type PaymentGateState =
   | 'cancelled'
   | 'payment_required'
   | 'payment_processing'
+  | 'payment_expired'
   | 'already_paid'
   | 'not_payable';
 
@@ -49,6 +51,7 @@ export function getPaymentEligibility(
     | 'status'
     | 'document_submitted'
     | 'booking_amount'
+    | 'payment_due_at'
     | 'total_amount'
     | 'daily_charge'
     | 'delivery_date'
@@ -126,6 +129,18 @@ export function getPaymentEligibility(
       currency: 'INR',
       title: 'Booking confirmed',
       description: 'Payment already completed.',
+    };
+  }
+
+  if (!isPaymentWindowOpen(booking.payment_due_at) && !hasPendingPayment(payments)) {
+    return {
+      state: 'payment_expired',
+      canPay: false,
+      amountPayable: 0,
+      currency: 'INR',
+      title: 'Payment window expired',
+      description:
+        'The payment window for this booking has ended. Contact Silver Carz if you still need this car.',
     };
   }
 

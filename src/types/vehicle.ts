@@ -26,6 +26,7 @@ export type PublicVehicle = Pick<
   | 'availability_status'
   | 'image_path'
   | 'is_active'
+  | 'city'
 >;
 
 /** Payload for inserting a vehicle (Supabase insert shape). */
@@ -60,6 +61,8 @@ export interface VehicleListFilters {
   readonly minDailyRate?: number;
   /** Inclusive maximum on `default_daily_rate` (customer browse). */
   readonly maxDailyRate?: number;
+  /** Exact city match (case-insensitive) for customer Book a Car. */
+  readonly city?: string;
   readonly createdFrom?: string;
   readonly createdTo?: string;
   /**

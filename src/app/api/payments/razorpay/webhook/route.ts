@@ -1,14 +1,14 @@
 /**
- * Razorpay webhook endpoint (C6 infrastructure).
+ * Razorpay webhook endpoint.
  *
- * Verifies the provider signature, attaches gateway payment ids, and does NOT
- * mark payments paid or bookings confirmed. Authoritative confirmation is C7.
+ * Verifies the provider signature, then confirms captured payments via the
+ * Razorpay Payments API (never trusts webhook body amount/status).
  */
 
 import { NextResponse } from 'next/server';
 
 import { verifyRazorpayWebhookSignature } from '@/features/payments/lib/razorpay-gateway';
-import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { getPaymentService } from '@/features/payments/service/payment-service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,13 +20,7 @@ type RazorpayWebhookPayload = {
       readonly entity?: {
         readonly id?: string;
         readonly order_id?: string;
-        readonly status?: string;
-        readonly amount?: number;
-      };
-    };
-    readonly order?: {
-      readonly entity?: {
-        readonly id?: string;
+        readonly error_description?: string;
       };
     };
   };
@@ -54,27 +48,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid payload.' }, { status: 400 });
   }
 
+  const event = payload.event?.trim() ?? '';
   const providerPaymentId = payload.payload?.payment?.entity?.id?.trim() || null;
-  const providerOrderId =
-    payload.payload?.payment?.entity?.order_id?.trim() ||
-    payload.payload?.order?.entity?.id?.trim() ||
-    null;
+  const providerOrderId = payload.payload?.payment?.entity?.order_id?.trim() || null;
 
-  // C6: store gateway payment reference only. Do not trust body status/amount.
-  // C7 will verify and mark paid + confirm booking.
-  if (providerOrderId && providerPaymentId) {
-    try {
-      const admin = createSupabaseAdminClient();
-      const { error } = await admin.rpc('attach_payment_provider_payment_id', {
-        p_provider_order_id: providerOrderId,
-        p_provider_payment_id: providerPaymentId,
-      });
+  if (!providerOrderId || !providerPaymentId) {
+    return NextResponse.json({ received: true });
+  }
 
-      if (error) {
-        return NextResponse.json({ error: 'Unable to record webhook.' }, { status: 500 });
-      }
-    } catch {
-      return NextResponse.json({ error: 'Unable to record webhook.' }, { status: 500 });
+  const payments = getPaymentService();
+
+  if (event === 'payment.captured') {
+    const result = await payments.completeCapturedGatewayPayment({
+      razorpayOrderId: providerOrderId,
+      razorpayPaymentId: providerPaymentId,
+    });
+
+    if (!result.success) {
+      return NextResponse.json({ error: 'Unable to confirm payment.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ received: true, status: 'paid' });
+  }
+
+  if (event === 'payment.failed') {
+    const result = await payments.markGatewayAttemptFailed({
+      razorpayOrderId: providerOrderId,
+      razorpayPaymentId: providerPaymentId,
+      reason:
+        payload.payload?.payment?.entity?.error_description ?? 'Payment failed at the gateway.',
+    });
+
+    if (!result.success) {
+      return NextResponse.json({ error: 'Unable to record failed payment.' }, { status: 500 });
     }
   }
 

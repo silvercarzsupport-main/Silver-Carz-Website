@@ -100,7 +100,10 @@ export function VehicleDetailPage({
               <VehicleStatusBadge isActive={vehicle.is_active} />
               {availability ? <VehicleAvailabilityBadge availability={availability} /> : null}
             </div>
-            <p className="text-sm text-muted-foreground tabular-nums">{vehicle.vehicle_number}</p>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {vehicle.vehicle_number}
+              {vehicle.city ? ` · ${vehicle.city}` : ''}
+            </p>
           </div>
 
           <VehicleDetailActions vehicleId={vehicle.id} />
@@ -132,6 +135,7 @@ export function VehicleDetailPage({
             />
             <VehicleDetailField label="Brand" value={vehicle.brand} />
             <VehicleDetailField label="Color" value={vehicle.color} />
+            <VehicleDetailField label="City" value={vehicle.city} />
             <VehicleDetailField
               label="Created Date"
               value={<span className="tabular-nums">{formatDateTime(vehicle.created_at)}</span>}

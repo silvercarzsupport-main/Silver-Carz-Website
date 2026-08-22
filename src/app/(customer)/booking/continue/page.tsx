@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { BookingProgressSteps } from '@/components/customer/book-a-car/booking-progress-steps';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
 import { Button } from '@/components/ui/button';
-import { appConfig } from '@/config';
+import { appConfig, citiesMatch } from '@/config';
 import { customerBookingContinuePath, ROUTES } from '@/constants/routes';
 import { BookingRequestWizard } from '@/features/customer-booking/components/booking-request-wizard';
 import { parseBookingWizardStep } from '@/features/customer-booking/lib/wizard-step';
+import { readBookingCity } from '@/features/customer-location/lib/booking-city-cookie';
 import { getPublicVehicle } from '@/features/vehicles/actions/list-public-vehicles';
 import { APP_ROLES, requireCustomerAuth } from '@/lib/auth';
 
@@ -92,6 +93,7 @@ export default async function BookingContinuePage({
   }
 
   const vehicleResult = await getPublicVehicle(vehicleId);
+  const bookingCity = await readBookingCity();
 
   if (!vehicleResult.success) {
     return (
@@ -119,12 +121,39 @@ export default async function BookingContinuePage({
     );
   }
 
+  if (bookingCity && !citiesMatch(vehicleResult.data.city, bookingCity)) {
+    return (
+      <>
+        <BookingProgressSteps activeStep={2} />
+        <CustomerContainer className="max-w-2xl py-10 sm:py-14">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground uppercase">
+            Car not available in {bookingCity}
+          </h1>
+          <div className="mt-3 h-1 w-12 bg-primary" aria-hidden="true" />
+          <p className="mt-5 text-base leading-relaxed text-muted-foreground">
+            This vehicle is stationed in {vehicleResult.data.city}. Choose a car from the{' '}
+            {bookingCity} fleet to continue.
+          </p>
+          <div className="mt-8">
+            <Button
+              asChild
+              className="h-11 rounded-md bg-primary font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary/90"
+            >
+              <Link href={ROUTES.bookACar}>Browse cars</Link>
+            </Button>
+          </div>
+        </CustomerContainer>
+      </>
+    );
+  }
+
   return (
     <BookingRequestWizard
       vehicle={vehicleResult.data}
       initialCustomerName={user.fullName?.trim() || ''}
       customerEmail={user.email ?? ''}
       initialStep={step}
+      initialCity={bookingCity || vehicleResult.data.city}
     />
   );
 }

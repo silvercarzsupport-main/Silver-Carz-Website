@@ -11,6 +11,7 @@ import { CustomerContainer } from '@/components/customer/shared/customer-contain
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { Button } from '@/components/ui/button';
+import { BookingLocationGate } from '@/features/customer-location/components/booking-location-gate';
 import {
   buildCustomerBookACarSearchParams,
   type CustomerBookACarUrlState,
@@ -24,6 +25,7 @@ export function BookACarView({
   selectedVehicle,
   isAuthenticated = false,
   errorMessage,
+  bookingCity,
 }: {
   state: CustomerBookACarUrlState;
   vehicles: readonly PublicVehicle[];
@@ -31,7 +33,10 @@ export function BookACarView({
   selectedVehicle: PublicVehicle | null;
   isAuthenticated?: boolean;
   errorMessage?: string | null;
+  bookingCity: string | null;
 }) {
+  const needsLocation = !bookingCity;
+
   return (
     <>
       <BookACarHero />
@@ -45,22 +50,33 @@ export function BookACarView({
             </h2>
             <div className="mt-2 h-1 w-12 bg-primary" aria-hidden="true" />
             <p className="mt-2 text-sm text-muted-foreground">
-              Browse active fleet vehicles. City filters will appear when location data is
-              available.
+              {bookingCity
+                ? `Browse the active fleet stationed in ${bookingCity}.`
+                : 'Choose your city to see cars available for pick-up there.'}
             </p>
           </div>
 
-          <BookACarFilters state={state} />
+          <BookingLocationGate bookingCity={bookingCity} />
+
+          {!needsLocation ? <BookACarFilters state={state} /> : null}
 
           {errorMessage ? (
             <ErrorState title="Unable to load vehicles" description={errorMessage} />
           ) : null}
 
-          {!errorMessage && vehicles.length === 0 ? (
+          {!errorMessage && needsLocation ? (
             <EmptyState
               icon={CarFront}
-              title="No cars match your filters"
-              description="Try a different availability or price filter, or clear filters to see the full fleet."
+              title="Choose your city to browse cars"
+              description="Select the city in India where you want to pick up a car."
+            />
+          ) : null}
+
+          {!errorMessage && !needsLocation && vehicles.length === 0 ? (
+            <EmptyState
+              icon={CarFront}
+              title={`No cars in ${bookingCity}`}
+              description="Try a different availability or price filter, or change city if you are booking elsewhere."
               action={
                 <Button asChild variant="outline" className="rounded-md">
                   <Link href="/" scroll={false}>
@@ -71,7 +87,7 @@ export function BookACarView({
             />
           ) : null}
 
-          {!errorMessage && vehicles.length > 0 ? (
+          {!errorMessage && !needsLocation && vehicles.length > 0 ? (
             <ul className="space-y-3">
               {vehicles.map((vehicle) => (
                 <li key={vehicle.id}>

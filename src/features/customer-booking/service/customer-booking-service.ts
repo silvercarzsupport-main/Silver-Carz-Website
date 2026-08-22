@@ -43,7 +43,11 @@ import {
   calculatePricing,
   pricingToPersistedFields,
 } from '@/features/bookings/service/pricing.service';
-import { expandInclusiveDateRange } from '@/features/customer-booking/lib/calendar-dates';
+import { citiesMatch } from '@/config/fleet-cities';
+import {
+  expandInclusiveDateRange,
+  todayIsoIst,
+} from '@/features/customer-booking/lib/calendar-dates';
 import { customerSafeConflictMessage } from '@/features/customer-booking/lib/conflict-message';
 import {
   customerBookingDatesSchema,
@@ -51,6 +55,7 @@ import {
   customerVehicleBookedDatesSchema,
   type CustomerBookingRequestInput,
 } from '@/features/customer-booking/validations/request';
+import { readBookingCity } from '@/features/customer-location/lib/booking-city-cookie';
 import {
   createAvailabilityService,
   type AvailabilityService,
@@ -82,8 +87,8 @@ export interface CustomerBookingService {
   listOwnBookings(): Promise<ApiResponse<readonly BookingWithVehicle[]>>;
 }
 
-function todayIsoUtc(): string {
-  return new Date().toISOString().slice(0, 10);
+function todayIsoBusiness(): string {
+  return todayIsoIst();
 }
 
 function assertCustomerActor(actor: AuthUser): void {
@@ -93,8 +98,23 @@ function assertCustomerActor(actor: AuthUser): void {
 }
 
 function assertNotInPast(deliveryDate: string): void {
-  if (deliveryDate < todayIsoUtc()) {
+  if (deliveryDate < todayIsoBusiness()) {
     throw createInvalidBookingDatesError('Pickup date cannot be in the past.');
+  }
+}
+
+async function assertVehicleInSelectedCity(vehicleCity: string | null | undefined): Promise<void> {
+  const bookingCity = await readBookingCity();
+  if (!bookingCity) {
+    throw createBookingValidationError('Select your city before requesting a car.');
+  }
+
+  if (!vehicleCity?.trim()) {
+    throw createBookingValidationError('This car is not assigned to a city yet.');
+  }
+
+  if (!citiesMatch(vehicleCity, bookingCity)) {
+    throw createBookingValidationError(`This car is not available in ${bookingCity}.`);
   }
 }
 
@@ -137,12 +157,13 @@ async function ensureScheduleClearForRequest(
   }
 }
 
-async function findRecentDuplicateDraft(
+async function findOpenDuplicateDraft(
   repository: BookingRepository,
   actorId: string,
   values: CustomerBookingRequestInput,
 ): Promise<Booking | null> {
-  // Idempotency: same customer + vehicle + dates within a short window.
+  // Idempotency: reuse an open draft for the same customer + vehicle + dates
+  // so retries do not create duplicate pending requests.
   const existing = await repository.list({
     vehicleId: values.vehicleId,
     status: BOOKING_STATUSES.draft,
@@ -249,6 +270,9 @@ export function createCustomerBookingService(
           throw vehicleResult.error;
         }
 
+        const vehicle = vehicleResult.data;
+        await assertVehicleInSelectedCity(vehicle.city);
+
         await ensureScheduleClearForRequest(getAvailability(), getConflict(), {
           vehicleId: parsed.data.vehicleId,
           deliveryDate: parsed.data.deliveryDate,
@@ -312,7 +336,7 @@ export function createCustomerBookingService(
         assertNotInPast(values.deliveryDate);
 
         const repository = await getRepository();
-        const duplicate = await findRecentDuplicateDraft(repository, actor.id, values);
+        const duplicate = await findOpenDuplicateDraft(repository, actor.id, values);
         if (duplicate) {
           return duplicate;
         }
@@ -323,6 +347,7 @@ export function createCustomerBookingService(
         }
 
         const vehicle = vehicleResult.data;
+        await assertVehicleInSelectedCity(vehicle.city);
         const dailyCharge = Number(vehicle.default_daily_rate);
 
         if (!Number.isFinite(dailyCharge) || dailyCharge < 0) {

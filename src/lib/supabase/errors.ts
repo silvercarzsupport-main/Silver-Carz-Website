@@ -20,7 +20,7 @@ const FALLBACK_MESSAGE = 'Something went wrong. Please try again.';
 
 /** User-safe messages for common Postgres error codes returned by Supabase. */
 const POSTGRES_ERROR_MESSAGES: Record<string, string> = {
-  '23505': 'A record with these details already exists.',
+  '23P01': 'This vehicle is already booked for the requested dates.',
   '23503': 'This record is linked to other data and cannot be changed this way.',
   '42501': 'You do not have permission to perform this action.',
 };

@@ -5,6 +5,8 @@
  * this module only shapes UX values.
  */
 
+import { DEFAULT_FLEET_CITY } from '@/config/fleet-cities';
+import { resolveIndianCity } from '@/config/indian-cities';
 import type { FuelType, TransmissionType, Vehicle, VehicleAvailabilityStatus } from '@/types';
 import { VEHICLE_AVAILABILITY_STATUSES } from '@/types';
 import {
@@ -27,6 +29,7 @@ export type VehicleFormValues = {
   availability_status: VehicleAvailabilityStatus;
   /** UI string — mapped to `is_active` boolean for the API/DB. */
   vehicle_status: VehicleStatusValue;
+  city: string;
 };
 
 export type VehicleFormFieldErrors = Partial<Record<keyof VehicleFormValues, string>>;
@@ -50,6 +53,7 @@ export function createVehicleFormDefaults(): VehicleFormValues {
     default_daily_rate: null,
     availability_status: VEHICLE_AVAILABILITY_STATUSES.available,
     vehicle_status: 'active',
+    city: DEFAULT_FLEET_CITY,
   };
 }
 
@@ -65,6 +69,7 @@ export function vehicleToFormValues(vehicle: Vehicle): VehicleFormValues {
     default_daily_rate: vehicle.default_daily_rate,
     availability_status: vehicle.availability_status,
     vehicle_status: vehicle.is_active ? 'active' : 'inactive',
+    city: resolveIndianCity(vehicle.city || '') ?? (vehicle.city || DEFAULT_FLEET_CITY),
   };
 }
 
@@ -116,6 +121,7 @@ export function toCreateVehicleInput(values: VehicleFormValues): unknown {
     availability_status: values.availability_status,
     image_path: null,
     is_active: values.vehicle_status === 'active',
+    city: resolveIndianCity(values.city) ?? DEFAULT_FLEET_CITY,
   };
 }
 

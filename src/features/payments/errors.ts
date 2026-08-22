@@ -82,3 +82,10 @@ export function createPaymentConfigurationError(): AppError {
 export function createPaymentValidationError(message: string): AppError {
   return new AppError(message, PAYMENT_ERROR_CODES.validation);
 }
+
+export function createPaymentVerificationError(message?: string): AppError {
+  return new AppError(
+    message ?? 'We could not verify this payment. Please wait a moment and refresh.',
+    PAYMENT_ERROR_CODES.gatewayFailure,
+  );
+}
