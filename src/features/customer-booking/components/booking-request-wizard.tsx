@@ -11,6 +11,7 @@ import { BookingProgressSteps } from '@/components/customer/book-a-car/booking-p
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -69,8 +70,11 @@ export function BookingRequestWizard({
 }) {
   const router = useRouter();
   const errorId = useId();
+  const termsErrorId = useId();
   const [step, setStep] = useState<BookingWizardStep>(initialStep);
   const [formError, setFormError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isCheckingDates, startDateCheck] = useTransition();
 
@@ -224,6 +228,12 @@ export function BookingRequestWizard({
   const onSubmitRequest = handleSubmit((values) => {
     setFormError(null);
 
+    // Terms & Conditions acknowledgement is required before a request is sent.
+    if (!termsAccepted) {
+      setTermsError(true);
+      return;
+    }
+
     startTransition(async () => {
       const result = await createCustomerBookingRequest(values);
 
@@ -262,9 +272,9 @@ export function BookingRequestWizard({
             <div className="mt-3 h-1 w-12 bg-primary" aria-hidden="true" />
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
               {visibleStep === 'dates'
-                ? 'Pick your dates on the calendar. Unavailable days are marked in red.'
+                ? 'Pick your dates on the calendar. Unavailable days are marked in red. As per company policy, one 24-hour cycle starts from midnight 12 to next day midnight 12.'
                 : visibleStep === 'details'
-                  ? 'Confirm how we can reach you for this rental request.'
+                  ? 'Confirm how we can reach you for this rental request. The hirer must be 20 or above and hold a driving licence.'
                   : 'Check everything carefully, then send your request for Silver Carz approval.'}
             </p>
 
@@ -562,6 +572,47 @@ export function BookingRequestWizard({
                     Submitting sends a booking request for admin approval. It does not confirm the
                     hire or complete payment.
                   </p>
+
+                  <div className="space-y-2 rounded-md border border-border bg-muted/40 p-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        id="terms-ack"
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => {
+                          setTermsAccepted(checked === true);
+                          if (checked) {
+                            setTermsError(false);
+                          }
+                        }}
+                        disabled={isLoading}
+                        aria-required="true"
+                        aria-invalid={termsError ? true : undefined}
+                        aria-describedby={termsError ? termsErrorId : undefined}
+                        className="mt-1 size-5"
+                      />
+                      <Label
+                        htmlFor="terms-ack"
+                        className="block min-w-0 items-start leading-relaxed font-normal whitespace-normal text-muted-foreground"
+                      >
+                        I have read and agree to the Silver Carz{' '}
+                        <Link
+                          href={`${ROUTES.aboutUs}#terms`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-foreground underline underline-offset-4 hover:text-primary"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          Terms & Conditions
+                        </Link>
+                        .
+                      </Label>
+                    </div>
+                    {termsError ? (
+                      <p id={termsErrorId} className="text-sm text-destructive" role="alert">
+                        Please accept the Terms & Conditions to submit your request.
+                      </p>
+                    ) : null}
+                  </div>
 
                   <div className="flex flex-wrap gap-3 pt-2">
                     <Button

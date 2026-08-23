@@ -95,7 +95,7 @@ export function BookingDocumentsPanel({
           <p className="mt-5 text-base leading-relaxed text-muted-foreground">
             {locked
               ? 'Your booking request and documents have been sent to Silver Carz for review.'
-              : 'Upload the required identity documents so Silver Carz can review your booking request.'}
+              : 'Upload copies of the required documents so Silver Carz can review your booking request. The original Aadhaar card is provided to the company at handover and returned at the end of the booking. The hirer must be 20 or above and hold a driving licence.'}
           </p>
         </div>
 

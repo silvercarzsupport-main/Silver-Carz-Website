@@ -9,11 +9,16 @@ import { formatCurrency } from '@/lib/format';
 import type { PublicVehicle } from '@/types';
 import { FUEL_TYPE_LABELS, TRANSMISSION_TYPE_LABELS } from '@/types/enums';
 
+/**
+ * Trust items shown beside the booking summary.
+ * Every claim here must stay consistent with the official Silver Carz
+ * Terms & Conditions (see the About Us page) — no unverifiable promises.
+ */
 const TRUST_ITEMS = [
-  'Unlimited Kilometers*',
-  'Insurance Included*',
-  '24/7 Support',
-  'Easy Cancellation*',
+  'Transparent Daily Rates',
+  'GPS-Monitored Vehicles',
+  'Admin-Approved Bookings',
+  'Secure Online Payments',
 ] as const;
 
 export function BookingSummaryPanel({

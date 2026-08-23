@@ -1,10 +1,9 @@
 'use client';
 
-import { Car } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { IconWell } from '@/components/shared/icon-well';
+import { BrandLogo } from '@/components/shared/brand-logo';
 import {
   Sidebar,
   SidebarContent,
@@ -61,11 +60,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg" tooltip={appConfig.name} className="rounded-2xl">
               <Link href={ROUTES.dashboard}>
-                <IconWell
-                  icon={Car}
-                  tone="default"
-                  className="bg-primary text-primary-foreground"
-                />
+                <BrandLogo size={36} preload className="rounded-lg" />
                 <div className="grid flex-1 text-left leading-tight">
                   <span className="truncate font-semibold">{appConfig.name}</span>
                   <span className="text-caption truncate text-muted-foreground">

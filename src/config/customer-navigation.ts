@@ -19,8 +19,7 @@ export const customerMainNavItems: readonly CustomerNavItem[] = [
 /** Footer quick links — same four primary pages. */
 export const customerQuickLinkItems: readonly CustomerNavItem[] = customerMainNavItems;
 
-/** Legal links for the customer footer bar (no dedicated pages yet). */
+/** Legal links for the customer footer bar. */
 export const customerLegalNavItems: readonly CustomerNavItem[] = [
-  { title: 'Terms & Conditions', href: ROUTES.aboutUs },
-  { title: 'Privacy Policy', href: ROUTES.aboutUs },
+  { title: 'Terms & Conditions', href: `${ROUTES.aboutUs}#terms` },
 ] as const;

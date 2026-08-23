@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { CustomerNavLink } from '@/components/customer/navigation/customer-nav-link';
+import { BrandLogo } from '@/components/shared/brand-logo';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { appConfig, customerMainNavItems } from '@/config';
@@ -39,12 +40,15 @@ export function CustomerMobileNav({ user }: { user: AuthUser | null }) {
         className="border-secondary bg-secondary text-secondary-foreground"
       >
         <SheetHeader>
-          <SheetTitle className="text-left text-secondary-foreground">
-            <span className="block text-base font-bold tracking-wide uppercase">
-              {appConfig.companyName}
-            </span>
-            <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.18em] text-primary uppercase">
-              Self Drive Car Rental
+          <SheetTitle className="flex items-center gap-2.5 text-left text-secondary-foreground">
+            <BrandLogo size={32} className="rounded-md" />
+            <span>
+              <span className="block text-base font-bold tracking-wide uppercase">
+                {appConfig.companyName}
+              </span>
+              <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.18em] text-primary uppercase">
+                Self Drive Car Rental
+              </span>
             </span>
           </SheetTitle>
         </SheetHeader>

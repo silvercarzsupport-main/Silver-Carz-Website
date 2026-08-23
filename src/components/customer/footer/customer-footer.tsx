@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { BrandLogo } from '@/components/shared/brand-logo';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
 import { appConfig, customerLegalNavItems, customerQuickLinkItems } from '@/config';
 import { ROUTES } from '@/constants/routes';
@@ -14,13 +15,16 @@ export function CustomerFooter() {
     <footer className="mt-auto bg-secondary text-secondary-foreground">
       <CustomerContainer className="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8 lg:py-14">
         <div className="sm:col-span-2 lg:col-span-1">
-          <Link href={ROUTES.home} className="inline-block">
-            <span className="block text-lg font-bold tracking-wide uppercase">
-              {appConfig.companyName}
-              <span className="text-primary">.</span>
-            </span>
-            <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.18em] text-primary uppercase">
-              Self Drive Car Rental
+          <Link href={ROUTES.home} className="inline-flex items-center gap-3">
+            <BrandLogo size={44} className="rounded-lg" />
+            <span>
+              <span className="block text-lg font-bold tracking-wide uppercase">
+                {appConfig.companyName}
+                <span className="text-primary">.</span>
+              </span>
+              <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.18em] text-primary uppercase">
+                Self Drive Car Rental
+              </span>
             </span>
           </Link>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-secondary-foreground/70">

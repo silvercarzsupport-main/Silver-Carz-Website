@@ -35,19 +35,21 @@ export const BOOKING_DOCUMENT_REQUIREMENTS: readonly BookingDocumentRequirement[
   {
     type: BOOKING_DOCUMENT_TYPES.drivingLicense,
     label: 'Driving License',
-    description: 'Valid driving licence (front and back if combined).',
+    description:
+      'Copy of a valid driving licence (front and back if combined). A driving licence is compulsory.',
     required: true,
   },
   {
     type: BOOKING_DOCUMENT_TYPES.governmentId,
-    label: 'Government ID',
-    description: 'Aadhaar, passport, or voter ID.',
+    label: 'Aadhaar',
+    description:
+      'Copy of Aadhaar. The original Aadhaar card is submitted to the company at handover and returned at the end of the booking.',
     required: true,
   },
   {
     type: BOOKING_DOCUMENT_TYPES.addressProof,
     label: 'Address Proof',
-    description: 'Utility bill, Aadhaar, or other proof of address.',
+    description: 'Copy of address proof.',
     required: true,
   },
 ] as const;

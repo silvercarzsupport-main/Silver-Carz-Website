@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { BrandLogo } from '@/components/shared/brand-logo';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
 import { appConfig } from '@/config';
 import { ROUTES } from '@/constants/routes';
@@ -28,7 +29,8 @@ export function CustomerAuthPanel({ title, description, children }: CustomerAuth
 
       <CustomerContainer className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link href={ROUTES.home} className="inline-block">
+          <Link href={ROUTES.home} className="inline-flex flex-col items-center">
+            <BrandLogo size={56} className="mb-3 rounded-xl" />
             <span className="block text-2xl font-bold tracking-wide text-foreground uppercase sm:text-3xl">
               {appConfig.companyName}
               <span className="text-primary">.</span>
