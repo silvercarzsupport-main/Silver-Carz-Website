@@ -63,6 +63,8 @@ import {
 import { getPublicVehicleService } from '@/features/vehicles/service/public-vehicle-service';
 import { APP_ROLES, requireUser, type AuthUser } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
+import { notifyBookingRequested } from '@/lib/notifications/booking-notifications';
+import { toE164Phone } from '@/lib/notifications/phone';
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { fromPromise } from '@/services';
@@ -100,6 +102,36 @@ function assertCustomerActor(actor: AuthUser): void {
 function assertNotInPast(deliveryDate: string): void {
   if (deliveryDate < todayIsoBusiness()) {
     throw createInvalidBookingDatesError('Pickup date cannot be in the past.');
+  }
+}
+
+async function persistWhatsAppPreference(input: {
+  readonly userId: string;
+  readonly contactNumber: string;
+  readonly optIn: boolean;
+}): Promise<void> {
+  if (!input.optIn) {
+    return;
+  }
+
+  const phone = toE164Phone(input.contactNumber);
+  if (!phone) {
+    return;
+  }
+
+  try {
+    const client = await createSupabaseServerClient();
+    await client
+      .from('profiles')
+      .update({
+        phone,
+        whatsapp_opt_in: true,
+        whatsapp_opt_in_at: new Date().toISOString(),
+        whatsapp_opt_out_at: null,
+      })
+      .eq('id', input.userId);
+  } catch (error) {
+    console.error('[booking-notification] unable to persist WhatsApp preference', error);
   }
 }
 
@@ -397,7 +429,14 @@ export function createCustomerBookingService(
 
         // Draft requests do not change vehicle availability — skip sync so a
         // customer JWT cannot attempt a staff-only vehicle update.
-        return repository.create(payload);
+        const created = await repository.create(payload);
+        await persistWhatsAppPreference({
+          userId: actor.id,
+          contactNumber: values.contactNumber,
+          optIn: values.whatsappUpdates,
+        });
+        notifyBookingRequested({ booking: created });
+        return created;
       });
     },
 

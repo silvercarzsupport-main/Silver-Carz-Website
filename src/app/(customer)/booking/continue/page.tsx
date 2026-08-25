@@ -10,7 +10,11 @@ import { BookingRequestWizard } from '@/features/customer-booking/components/boo
 import { parseBookingWizardStep } from '@/features/customer-booking/lib/wizard-step';
 import { readBookingCity } from '@/features/customer-location/lib/booking-city-cookie';
 import { getPublicVehicle } from '@/features/vehicles/actions/list-public-vehicles';
-import { APP_ROLES, requireCustomerAuth } from '@/lib/auth';
+import {
+  hasValidBrowseDates,
+  parseCustomerBookACarUrlState,
+} from '@/features/vehicles/lib/public-vehicle-list-params';
+import { APP_ROLES, getCurrentProfile, requireCustomerAuth } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: `Book a car | ${appConfig.companyName}`,
@@ -21,7 +25,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Authenticated booking request wizard (C3).
- * Preserves vehicle selection from Book a Car and creates a draft request.
+ * Preserves vehicle selection (and optional dates) from Book a Car.
  */
 export default async function BookingContinuePage({
   searchParams,
@@ -30,8 +34,23 @@ export default async function BookingContinuePage({
 }) {
   const params = await searchParams;
   const vehicleId = firstParam(params.vehicle);
-  const step = parseBookingWizardStep(params.step);
-  const nextPath = vehicleId ? customerBookingContinuePath(vehicleId) : ROUTES.bookingContinue;
+  const browseDates = parseCustomerBookACarUrlState({
+    from: params.from,
+    to: params.to,
+  });
+  const datesFromBrowse = hasValidBrowseDates(browseDates);
+  const stepParam = parseBookingWizardStep(params.step);
+  // With browse dates and no explicit step, skip the calendar step.
+  const step = datesFromBrowse && !firstParam(params.step) ? 'details' : stepParam;
+  const nextPath = vehicleId
+    ? customerBookingContinuePath(
+        vehicleId,
+        step,
+        datesFromBrowse
+          ? { deliveryDate: browseDates.deliveryDate, returnDate: browseDates.returnDate }
+          : undefined,
+      )
+    : ROUTES.bookingContinue;
 
   const user = await requireCustomerAuth(nextPath);
 
@@ -94,6 +113,7 @@ export default async function BookingContinuePage({
 
   const vehicleResult = await getPublicVehicle(vehicleId);
   const bookingCity = await readBookingCity();
+  const profile = await getCurrentProfile();
 
   if (!vehicleResult.success) {
     return (
@@ -152,8 +172,12 @@ export default async function BookingContinuePage({
       vehicle={vehicleResult.data}
       initialCustomerName={user.fullName?.trim() || ''}
       customerEmail={user.email ?? ''}
+      initialContactNumber={profile?.phone ?? ''}
+      initialWhatsAppUpdates={profile?.whatsappOptIn ?? true}
       initialStep={step}
       initialCity={bookingCity || vehicleResult.data.city}
+      initialDeliveryDate={datesFromBrowse ? browseDates.deliveryDate : null}
+      initialReturnDate={datesFromBrowse ? browseDates.returnDate : null}
     />
   );
 }

@@ -26,6 +26,8 @@ export interface UserProfile {
   readonly fullName: string | null;
   readonly role: AppRole;
   readonly isActive: boolean;
+  readonly phone: string | null;
+  readonly whatsappOptIn: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

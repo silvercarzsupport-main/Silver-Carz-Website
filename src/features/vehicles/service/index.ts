@@ -19,3 +19,5 @@ export {
   getPublicVehicleService,
   type PublicVehicleService,
 } from './public-vehicle-service';
+
+export { listBusyVehicleIdsForRange } from './list-busy-vehicle-ids';

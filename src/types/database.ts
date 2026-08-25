@@ -19,6 +19,10 @@ export type Database = {
           full_name: string | null;
           role: Database['public']['Enums']['app_role'];
           is_active: boolean;
+          phone: string | null;
+          whatsapp_opt_in: boolean;
+          whatsapp_opt_in_at: string | null;
+          whatsapp_opt_out_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -28,6 +32,10 @@ export type Database = {
           full_name?: string | null;
           role?: Database['public']['Enums']['app_role'];
           is_active?: boolean;
+          phone?: string | null;
+          whatsapp_opt_in?: boolean;
+          whatsapp_opt_in_at?: string | null;
+          whatsapp_opt_out_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -37,6 +45,10 @@ export type Database = {
           full_name?: string | null;
           role?: Database['public']['Enums']['app_role'];
           is_active?: boolean;
+          phone?: string | null;
+          whatsapp_opt_in?: boolean;
+          whatsapp_opt_in_at?: string | null;
+          whatsapp_opt_out_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -377,6 +389,75 @@ export type Database = {
           },
         ];
       };
+      notification_outbox: {
+        Row: {
+          id: string;
+          idempotency_key: string;
+          event_type: string;
+          booking_id: string | null;
+          profile_id: string | null;
+          payload: Json;
+          status: string;
+          attempts: number;
+          last_error: string | null;
+          email_status: string | null;
+          whatsapp_status: string | null;
+          whatsapp_message_id: string | null;
+          processed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          idempotency_key: string;
+          event_type: string;
+          booking_id?: string | null;
+          profile_id?: string | null;
+          payload?: Json;
+          status?: string;
+          attempts?: number;
+          last_error?: string | null;
+          email_status?: string | null;
+          whatsapp_status?: string | null;
+          whatsapp_message_id?: string | null;
+          processed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          idempotency_key?: string;
+          event_type?: string;
+          booking_id?: string | null;
+          profile_id?: string | null;
+          payload?: Json;
+          status?: string;
+          attempts?: number;
+          last_error?: string | null;
+          email_status?: string | null;
+          whatsapp_status?: string | null;
+          whatsapp_message_id?: string | null;
+          processed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_outbox_booking_id_fkey';
+            columns: ['booking_id'];
+            isOneToOne: false;
+            referencedRelation: 'bookings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notification_outbox_profile_id_fkey';
+            columns: ['profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -489,6 +570,16 @@ export type Database = {
       release_overdue_unpaid_bookings: {
         Args: Record<PropertyKey, never>;
         Returns: number;
+      };
+      insert_booking_notification_outbox: {
+        Args: {
+          p_idempotency_key: string;
+          p_event_type: string;
+          p_booking_id: string;
+          p_profile_id: string;
+          p_payload: Json;
+        };
+        Returns: undefined;
       };
       next_invoice_sequence: {
         Args: {

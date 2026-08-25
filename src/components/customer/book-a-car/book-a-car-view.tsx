@@ -5,6 +5,7 @@ import { BookACarFilters } from '@/components/customer/book-a-car/book-a-car-fil
 import { BookACarHero } from '@/components/customer/book-a-car/book-a-car-hero';
 import { BookingProgressSteps } from '@/components/customer/book-a-car/booking-progress-steps';
 import { BookingSummaryPanel } from '@/components/customer/book-a-car/booking-summary-panel';
+import { FranchiseEnquiryBanner } from '@/components/customer/book-a-car/franchise-enquiry-banner';
 import { VehicleBrowseCard } from '@/components/customer/book-a-car/vehicle-browse-card';
 import { WhyBookBar } from '@/components/customer/book-a-car/why-book-bar';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
@@ -40,6 +41,7 @@ export function BookACarView({
   return (
     <>
       <BookACarHero />
+      <FranchiseEnquiryBanner />
       <BookingProgressSteps activeStep={1} />
 
       <CustomerContainer className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:py-10 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -76,7 +78,7 @@ export function BookACarView({
             <EmptyState
               icon={CarFront}
               title={`No cars in ${bookingCity}`}
-              description="Try a different availability or price filter, or change city if you are booking elsewhere."
+              description="Try different dates or availability, or change city if you are booking elsewhere."
               action={
                 <Button asChild variant="outline" className="rounded-md">
                   <Link href="/" scroll={false}>
@@ -143,7 +145,12 @@ export function BookACarView({
         </div>
 
         <div className="lg:sticky lg:top-24">
-          <BookingSummaryPanel vehicle={selectedVehicle} isAuthenticated={isAuthenticated} />
+          <BookingSummaryPanel
+            vehicle={selectedVehicle}
+            isAuthenticated={isAuthenticated}
+            deliveryDate={state.deliveryDate}
+            returnDate={state.returnDate}
+          />
         </div>
       </CustomerContainer>
 

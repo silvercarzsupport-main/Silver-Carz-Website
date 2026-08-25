@@ -65,6 +65,7 @@ export const customerBookingRequestSchema = z
     state: requiredString('State is required.').max(80, 'State must be at most 80 characters.'),
     zipCode: zipCodeSchema,
     placeToVisit: z.string().trim().max(200, 'Must be at most 200 characters.'),
+    whatsappUpdates: z.boolean(),
   })
   .superRefine((data, ctx) => {
     refineDateRange(data.deliveryDate, data.returnDate, ctx, ['returnDate']);

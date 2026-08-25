@@ -152,6 +152,7 @@ type FilterableBuilder = {
   lte: (column: string, value: unknown) => FilterableBuilder;
   ilike: (column: string, value: string) => FilterableBuilder;
   or: (filters: string) => FilterableBuilder;
+  not: (column: string, operator: string, value: unknown) => FilterableBuilder;
 };
 
 function applyNonSearchFilters(
@@ -171,7 +172,7 @@ function applyNonSearchFilters(
   if (filters?.isActive !== undefined) {
     next = next.eq('is_active', filters.isActive);
   } else if (filters?.available === true) {
-    // Active roster + available status. Booking-window conflicts come later.
+    // Active roster + available status. Pair with excludeIds for date windows.
     next = next.eq('is_active', true).eq('availability_status', 'available');
   } else if (!filters?.includeInactive) {
     next = next.eq('is_active', true);
@@ -196,6 +197,12 @@ function applyNonSearchFilters(
 
   if (filters?.createdTo) {
     next = next.lte('created_at', `${filters.createdTo}T23:59:59.999Z`);
+  }
+
+  const excludeIds = filters?.excludeIds?.filter(Boolean) ?? [];
+  if (excludeIds.length > 0) {
+    // PostgREST `not.in` expects a parenthesized CSV list.
+    next = next.not('id', 'in', `(${excludeIds.join(',')})`);
   }
 
   return next;

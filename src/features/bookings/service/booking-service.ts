@@ -60,8 +60,11 @@ import { getProfileById } from '@/lib/auth/profile';
 import { AppError } from '@/lib/errors';
 import {
   notifyBookingApproved,
+  notifyBookingCancelled,
   notifyBookingRejected,
+  notifyBookingUpdated,
 } from '@/lib/notifications/booking-notifications';
+import { formatCurrency, formatDate } from '@/lib/format';
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import { fromPromise } from '@/services';
 import type {
@@ -146,6 +149,28 @@ function parseUpdateInput(input: unknown): UpdateBookingValues {
   }
 
   return parsed.data;
+}
+
+function customerFacingUpdateSummary(before: Booking, after: Booking): string | null {
+  const parts: string[] = [];
+
+  if (before.delivery_date !== after.delivery_date || before.return_date !== after.return_date) {
+    parts.push(
+      `Pickup is now ${formatDate(after.delivery_date)} and return is ${formatDate(after.return_date)}.`,
+    );
+  }
+
+  if (before.vehicle_id !== after.vehicle_id) {
+    parts.push('The assigned vehicle was changed.');
+  }
+
+  if (Number(before.total_amount) !== Number(after.total_amount)) {
+    parts.push(
+      `The hire total is now ${formatCurrency(Number(after.total_amount), { maximumFractionDigits: 0 })}.`,
+    );
+  }
+
+  return parts.length > 0 ? parts.join(' ') : null;
 }
 
 async function ensureInvoiceUnique(
@@ -454,6 +479,15 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
           await syncVehicleAvailability(updated.vehicle_id);
         }
 
+        const updateSummary = customerFacingUpdateSummary(existing, updated);
+        if (updateSummary) {
+          notifyBookingUpdated({
+            booking: updated,
+            previous: existing,
+            updateSummary,
+          });
+        }
+
         return updated;
       });
     },
@@ -470,6 +504,7 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
 
         const cancelled = await repository.softDelete(id);
         await syncVehicleAvailability(existing.vehicle_id);
+        notifyBookingCancelled({ booking: cancelled });
         return cancelled;
       });
     },

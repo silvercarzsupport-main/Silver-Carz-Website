@@ -9,7 +9,6 @@
  * Primary customer pages (nav):
  *   /                 Book a Car
  *   /car-detailing    Car Detailing
- *   /vendor           Vendor
  *   /about-us         About Us
  */
 
@@ -18,7 +17,6 @@ export const ROUTES = {
   home: '/',
   bookACar: '/',
   carDetailing: '/car-detailing',
-  vendor: '/vendor',
   aboutUs: '/about-us',
 
   // --- Customer account / workflow (not primary nav) ---
@@ -72,15 +70,28 @@ export function vehicleEditPath(id: string): string {
 
 /**
  * Authenticated booking wizard path that preserves the selected vehicle.
+ * When both booking dates are provided, defaults to the details step.
  */
 export function customerBookingContinuePath(
   vehicleId: string,
   step?: 'dates' | 'details' | 'review',
+  dates?: { readonly deliveryDate?: string | null; readonly returnDate?: string | null },
 ): string {
   const params = new URLSearchParams({ vehicle: vehicleId });
-  if (step && step !== 'dates') {
-    params.set('step', step);
+  const deliveryDate = dates?.deliveryDate?.trim() || '';
+  const returnDate = dates?.returnDate?.trim() || '';
+  const hasDates = Boolean(deliveryDate && returnDate);
+
+  if (hasDates) {
+    params.set('from', deliveryDate);
+    params.set('to', returnDate);
   }
+
+  const resolvedStep = step ?? (hasDates ? 'details' : 'dates');
+  if (resolvedStep !== 'dates') {
+    params.set('step', resolvedStep);
+  }
+
   return `${ROUTES.bookingContinue}?${params.toString()}`;
 }
 

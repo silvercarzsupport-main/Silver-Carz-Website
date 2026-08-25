@@ -50,9 +50,8 @@ export interface VehicleListFilters {
    */
   readonly includeInactive?: boolean;
   /**
-   * Architecture-ready availability flag.
-   * Today: active vehicles with `availability_status = available`.
-   * Future: also exclude vehicles with booking conflicts in a date window.
+   * Active vehicles with `availability_status = available`.
+   * Pair with `excludeIds` (busy in a date window) for schedule-aware browse.
    */
   readonly available?: boolean;
   /** Exact match on `availability_status`. */
@@ -61,6 +60,11 @@ export interface VehicleListFilters {
   readonly minDailyRate?: number;
   /** Inclusive maximum on `default_daily_rate` (customer browse). */
   readonly maxDailyRate?: number;
+  /**
+   * Vehicle IDs to omit from the list (e.g. schedule conflicts in a date window).
+   * Empty / omitted = no exclusion.
+   */
+  readonly excludeIds?: readonly string[];
   /** Exact city match (case-insensitive) for customer Book a Car. */
   readonly city?: string;
   readonly createdFrom?: string;

@@ -3,9 +3,11 @@ import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { customerBookingContinuePath } from '@/constants/routes';
+import { calculateRentalDays } from '@/features/customer-booking/lib/estimate';
+import { hasValidBrowseDates } from '@/features/vehicles/lib/public-vehicle-list-params';
 import { VehicleThumbnail } from '@/features/vehicles/components/vehicle-thumbnail';
 import { buildCustomerLoginRedirectPath } from '@/lib/auth/route-guards';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
 import type { PublicVehicle } from '@/types';
 import { FUEL_TYPE_LABELS, TRANSMISSION_TYPE_LABELS } from '@/types/enums';
 
@@ -24,19 +26,45 @@ const TRUST_ITEMS = [
 export function BookingSummaryPanel({
   vehicle,
   isAuthenticated,
+  deliveryDate = null,
+  returnDate = null,
 }: {
   vehicle: PublicVehicle | null;
   isAuthenticated: boolean;
+  deliveryDate?: string | null;
+  returnDate?: string | null;
 }) {
   const rate = vehicle
     ? formatCurrency(Number(vehicle.default_daily_rate), { maximumFractionDigits: 0 })
     : null;
 
-  const continueHref = vehicle
-    ? isAuthenticated
-      ? customerBookingContinuePath(vehicle.id)
-      : buildCustomerLoginRedirectPath(customerBookingContinuePath(vehicle.id))
-    : null;
+  const datesReady = hasValidBrowseDates({
+    availability: 'all',
+    deliveryDate,
+    returnDate,
+    vehicleId: null,
+    page: 1,
+  });
+
+  const rentalDays =
+    datesReady && deliveryDate && returnDate ? calculateRentalDays(deliveryDate, returnDate) : null;
+
+  const continueHref =
+    vehicle && datesReady
+      ? isAuthenticated
+        ? customerBookingContinuePath(vehicle.id, 'details', {
+            deliveryDate,
+            returnDate,
+          })
+        : buildCustomerLoginRedirectPath(
+            customerBookingContinuePath(vehicle.id, 'details', {
+              deliveryDate,
+              returnDate,
+            }),
+          )
+      : null;
+
+  const ctaLabel = isAuthenticated ? 'Your details →' : 'Continue →';
 
   return (
     <aside className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
@@ -71,11 +99,31 @@ export function BookingSummaryPanel({
 
         <div className="space-y-2 border-t border-border pt-4 text-sm">
           <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Pickup</span>
+            <span className="font-medium text-foreground">
+              {datesReady && deliveryDate ? formatDate(deliveryDate) : '—'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Return</span>
+            <span className="font-medium text-foreground">
+              {datesReady && returnDate ? formatDate(returnDate) : '—'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Duration</span>
+            <span className="font-medium text-foreground">
+              {rentalDays ? `${rentalDays} day${rentalDays === 1 ? '' : 's'}` : '—'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
             <span className="text-muted-foreground">Estimated price</span>
             <span className="font-bold text-foreground">{rate ? `${rate} /day` : '—'}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Dates, duration, and final quote are confirmed in the next steps.
+            {datesReady
+              ? 'Final quote is confirmed when you submit your booking request.'
+              : 'Choose pickup and return dates above to continue.'}
           </p>
         </div>
 
@@ -84,7 +132,7 @@ export function BookingSummaryPanel({
             asChild
             className="h-11 w-full rounded-md bg-primary font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary/90"
           >
-            <Link href={continueHref}>{isAuthenticated ? 'Select dates →' : 'Continue →'}</Link>
+            <Link href={continueHref}>{ctaLabel}</Link>
           </Button>
         ) : (
           <Button
@@ -92,15 +140,17 @@ export function BookingSummaryPanel({
             disabled
             className="h-11 w-full rounded-md bg-primary font-bold tracking-wide text-primary-foreground uppercase opacity-80"
           >
-            Select dates →
+            {vehicle ? (datesReady ? ctaLabel : 'Select dates →') : 'Select dates →'}
           </Button>
         )}
         <p className="text-center text-xs text-muted-foreground">
           {vehicle
-            ? isAuthenticated
-              ? 'Next: choose pickup and return dates, then submit a request for approval.'
-              : 'Sign in or create an account to continue with this car.'
-            : 'Select a vehicle to continue.'}
+            ? datesReady
+              ? isAuthenticated
+                ? 'Next: enter your details and submit a request for approval.'
+                : 'Sign in or create an account to continue with this car.'
+              : 'Set pickup and return dates in the filters to continue.'
+            : 'Select dates and a vehicle to continue.'}
         </p>
 
         <ul className="space-y-2 border-t border-border pt-4">

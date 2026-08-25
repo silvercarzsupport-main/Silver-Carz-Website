@@ -40,7 +40,10 @@ import {
 } from '@/features/payments/repository/payment-repository';
 import { APP_ROLES, requireUser, type AuthUser } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
-import { notifyBookingPaymentConfirmed } from '@/lib/notifications/booking-notifications';
+import {
+  notifyBookingPaymentConfirmed,
+  notifyBookingPaymentFailed,
+} from '@/lib/notifications/booking-notifications';
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
@@ -224,21 +227,6 @@ export function createPaymentService(deps: PaymentServiceDeps = {}): PaymentServ
     return data as BookingWithVehicle;
   }
 
-  async function loadCustomerEmail(userId: string): Promise<string | null> {
-    const admin = createSupabaseAdminClient();
-    const { data, error } = await admin
-      .from('profiles')
-      .select('email')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (error || !data?.email) {
-      return null;
-    }
-
-    return data.email;
-  }
-
   async function maybeNotifyPaymentConfirmed(input: {
     readonly wasAlreadyPaid: boolean;
     readonly payment: Payment;
@@ -252,16 +240,23 @@ export function createPaymentService(deps: PaymentServiceDeps = {}): PaymentServ
       return;
     }
 
-    const customerEmail = await loadCustomerEmail(input.payment.customer_id);
-    if (!customerEmail) {
+    notifyBookingPaymentConfirmed({
+      booking,
+      amountPaid: Number(input.payment.amount),
+    });
+  }
+
+  async function maybeNotifyPaymentFailed(payment: Payment): Promise<void> {
+    if (payment.status !== BOOKING_PAYMENT_STATUSES.failed) {
       return;
     }
 
-    notifyBookingPaymentConfirmed({
-      booking,
-      customerEmail,
-      amountPaid: Number(input.payment.amount),
-    });
+    const booking = await loadBookingForNotification(payment.booking_id);
+    if (!booking) {
+      return;
+    }
+
+    notifyBookingPaymentFailed({ booking, paymentId: payment.id });
   }
 
   async function verifyCapturedGatewayPayment(input: {
@@ -505,7 +500,9 @@ export function createPaymentService(deps: PaymentServiceDeps = {}): PaymentServ
           throw mapRpcError(error);
         }
 
-        return toPaymentSummary(data as Payment);
+        const payment = data as Payment;
+        await maybeNotifyPaymentFailed(payment);
+        return toPaymentSummary(payment);
       });
     },
 
@@ -520,6 +517,7 @@ export function createPaymentService(deps: PaymentServiceDeps = {}): PaymentServ
             status: BOOKING_PAYMENT_STATUSES.failed,
             failureReason: input.reason ?? 'Payment failed at the gateway.',
           });
+          await maybeNotifyPaymentFailed(row);
           return toPaymentSummary(row);
         } catch (error) {
           const mapped = mapRpcError(error);

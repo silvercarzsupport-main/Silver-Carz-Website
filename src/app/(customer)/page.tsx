@@ -10,9 +10,11 @@ import {
   listPublicVehicles,
 } from '@/features/vehicles/actions/list-public-vehicles';
 import {
+  hasValidBrowseDates,
   parseCustomerBookACarUrlState,
   toPublicVehicleListQuery,
 } from '@/features/vehicles/lib/public-vehicle-list-params';
+import { listBusyVehicleIdsForRange } from '@/features/vehicles/service/list-busy-vehicle-ids';
 import { getAuthState } from '@/lib/auth';
 import type { PublicVehicle } from '@/types';
 
@@ -63,7 +65,20 @@ async function BookACarPageContent({
     );
   }
 
-  const result = await listPublicVehicles(toPublicVehicleListQuery(state, bookingCity));
+  let excludeIds: readonly string[] | undefined;
+  if (hasValidBrowseDates(state) && state.deliveryDate && state.returnDate) {
+    const busy = await listBusyVehicleIdsForRange({
+      deliveryDate: state.deliveryDate,
+      returnDate: state.returnDate,
+    });
+    if (busy.success && busy.data.length > 0) {
+      excludeIds = busy.data;
+    }
+  }
+
+  const result = await listPublicVehicles(
+    toPublicVehicleListQuery(state, bookingCity, { excludeIds }),
+  );
 
   if (!result.success) {
     return (

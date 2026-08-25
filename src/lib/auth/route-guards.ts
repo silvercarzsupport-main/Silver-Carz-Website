@@ -232,7 +232,6 @@ export function isSafeCustomerRedirectPath(nextPath: string): boolean {
 
   const allowedExact: readonly string[] = [
     ROUTES.carDetailing,
-    ROUTES.vendor,
     ROUTES.aboutUs,
     ROUTES.customerLogin,
     ROUTES.customerSignup,

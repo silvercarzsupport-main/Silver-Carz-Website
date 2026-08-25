@@ -19,9 +19,21 @@ import { AppError } from '@/lib/errors';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { Tables } from '@/types/database';
 
-const PROFILE_COLUMNS = 'id, email, full_name, role, is_active, created_at, updated_at' as const;
+const PROFILE_COLUMNS =
+  'id, email, full_name, role, is_active, phone, whatsapp_opt_in, created_at, updated_at' as const;
 
-type ProfileRow = Tables<'profiles'>;
+type ProfileRow = Pick<
+  Tables<'profiles'>,
+  | 'id'
+  | 'email'
+  | 'full_name'
+  | 'role'
+  | 'is_active'
+  | 'phone'
+  | 'whatsapp_opt_in'
+  | 'created_at'
+  | 'updated_at'
+>;
 
 const SCHEMA_MISSING_CODES = new Set(['PGRST205', '42P01']);
 
@@ -60,6 +72,8 @@ export function toUserProfile(row: ProfileRow): UserProfile | null {
     fullName: row.full_name,
     role: row.role,
     isActive: row.is_active,
+    phone: row.phone,
+    whatsappOptIn: row.whatsapp_opt_in,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

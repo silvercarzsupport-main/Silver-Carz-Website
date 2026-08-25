@@ -2,35 +2,76 @@
  * Customer Book a Car URL state ↔ VehicleListQuery mapping.
  *
  * Booking city is cookie-backed (location prompt), not a public URL param.
+ * Optional `from` / `to` dates filter the fleet to cars free in that window.
  */
 
+import {
+  getBookingHorizonEndIso,
+  todayIsoIst,
+} from '@/features/customer-booking/lib/calendar-dates';
 import type { VehicleListQuery } from '@/types/vehicle';
 import { isVehicleAvailabilityStatus } from '@/types/enums';
 
-export type CustomerPriceFilter = 'all' | 'under-2000' | '2000-4000' | '4000-plus';
 export type CustomerAvailabilityFilter = 'all' | 'available';
 
 export interface CustomerBookACarUrlState {
   readonly availability: CustomerAvailabilityFilter;
-  readonly price: CustomerPriceFilter;
+  /** Pickup date `YYYY-MM-DD`, or null when unset / invalid. */
+  readonly deliveryDate: string | null;
+  /** Return date `YYYY-MM-DD`, or null when unset / invalid. */
+  readonly returnDate: string | null;
   readonly vehicleId: string | null;
   readonly page: number;
 }
 
-const PRICE_BOUNDS: Record<
-  Exclude<CustomerPriceFilter, 'all'>,
-  { minDailyRate?: number; maxDailyRate?: number }
-> = {
-  'under-2000': { maxDailyRate: 1999.99 },
-  '2000-4000': { minDailyRate: 2000, maxDailyRate: 4000 },
-  '4000-plus': { minDailyRate: 4000.01 },
-};
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-function parsePrice(value: string | undefined): CustomerPriceFilter {
-  if (value === 'under-2000' || value === '2000-4000' || value === '4000-plus') {
-    return value;
+export function isIsoDateString(value: string | null | undefined): value is string {
+  return typeof value === 'string' && ISO_DATE_RE.test(value);
+}
+
+/**
+ * Validates a browse/wizard date window against the customer booking horizon.
+ * Returns null when both dates are valid; otherwise a short user-facing message.
+ */
+export function validateBrowseDateRange(
+  deliveryDate: string | null | undefined,
+  returnDate: string | null | undefined,
+  asOfIso: string = todayIsoIst(),
+): string | null {
+  if (!deliveryDate && !returnDate) {
+    return null;
   }
-  return 'all';
+  if (!isIsoDateString(deliveryDate) || !isIsoDateString(returnDate)) {
+    return 'Select both a pickup date and a return date.';
+  }
+  if (returnDate < deliveryDate) {
+    return 'Return date must be on or after pickup.';
+  }
+  const today = asOfIso;
+  const horizon = getBookingHorizonEndIso(today);
+  if (deliveryDate < today) {
+    return 'Pickup date cannot be in the past.';
+  }
+  if (deliveryDate > horizon || returnDate > horizon) {
+    return 'Pickup and return must fall within this month or next month.';
+  }
+  return null;
+}
+
+export function hasValidBrowseDates(state: CustomerBookACarUrlState): boolean {
+  return (
+    validateBrowseDateRange(state.deliveryDate, state.returnDate) === null &&
+    isIsoDateString(state.deliveryDate) &&
+    isIsoDateString(state.returnDate)
+  );
+}
+
+function parseIsoDateParam(value: string | undefined): string | null {
+  if (!value || !ISO_DATE_RE.test(value)) {
+    return null;
+  }
+  return value;
 }
 
 function parseAvailability(value: string | undefined): CustomerAvailabilityFilter {
@@ -48,14 +89,23 @@ export function parseCustomerBookACarUrlState(
   searchParams: Record<string, string | string[] | undefined>,
 ): CustomerBookACarUrlState {
   const availabilityRaw = firstParam(searchParams.availability);
-  const priceRaw = firstParam(searchParams.price);
+  const fromRaw = firstParam(searchParams.from);
+  const toRaw = firstParam(searchParams.to);
   const vehicleRaw = firstParam(searchParams.vehicle);
   const pageRaw = firstParam(searchParams.page);
   const page = Math.max(1, Number.parseInt(pageRaw ?? '1', 10) || 1);
 
+  const deliveryDate = parseIsoDateParam(fromRaw);
+  const returnDate = parseIsoDateParam(toRaw);
+
+  // Drop incomplete / invalid pairs so list filtering stays consistent.
+  const rangeError = validateBrowseDateRange(deliveryDate, returnDate);
+  const datesValid = rangeError === null && deliveryDate && returnDate;
+
   return {
     availability: parseAvailability(availabilityRaw),
-    price: parsePrice(priceRaw),
+    deliveryDate: datesValid ? deliveryDate : null,
+    returnDate: datesValid ? returnDate : null,
     vehicleId: vehicleRaw?.trim() || null,
     page,
   };
@@ -64,14 +114,13 @@ export function parseCustomerBookACarUrlState(
 export function toPublicVehicleListQuery(
   state: CustomerBookACarUrlState,
   city: string,
+  options?: { readonly excludeIds?: readonly string[] },
 ): VehicleListQuery {
-  const priceBounds = state.price === 'all' ? {} : PRICE_BOUNDS[state.price];
-
   return {
     isActive: true,
     available: state.availability === 'available' ? true : undefined,
     city,
-    ...priceBounds,
+    excludeIds: options?.excludeIds?.length ? options.excludeIds : undefined,
     page: state.page,
     pageSize: 12,
     sortBy: 'vehicle_name',
@@ -89,8 +138,9 @@ export function buildCustomerBookACarSearchParams(
   if (next.availability !== 'all') {
     params.set('availability', next.availability);
   }
-  if (next.price !== 'all') {
-    params.set('price', next.price);
+  if (next.deliveryDate && next.returnDate) {
+    params.set('from', next.deliveryDate);
+    params.set('to', next.returnDate);
   }
   if (next.vehicleId) {
     params.set('vehicle', next.vehicleId);

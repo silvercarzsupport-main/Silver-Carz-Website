@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState, useTransition } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { BookingProgressSteps } from '@/components/customer/book-a-car/booking-progress-steps';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
@@ -59,18 +59,28 @@ export function BookingRequestWizard({
   vehicle,
   initialCustomerName,
   customerEmail,
+  initialContactNumber = '',
+  initialWhatsAppUpdates = true,
   initialStep = 'dates',
   initialCity = '',
+  initialDeliveryDate = null,
+  initialReturnDate = null,
 }: {
   readonly vehicle: PublicVehicle;
   readonly initialCustomerName: string;
   readonly customerEmail: string;
+  readonly initialContactNumber?: string;
+  readonly initialWhatsAppUpdates?: boolean;
   readonly initialStep?: BookingWizardStep;
   readonly initialCity?: string;
+  readonly initialDeliveryDate?: string | null;
+  readonly initialReturnDate?: string | null;
 }) {
   const router = useRouter();
   const errorId = useId();
   const termsErrorId = useId();
+  const seededDelivery = initialDeliveryDate?.trim() || '';
+  const seededReturn = initialReturnDate?.trim() || '';
   const [step, setStep] = useState<BookingWizardStep>(initialStep);
   const [formError, setFormError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -91,11 +101,12 @@ export function BookingRequestWizard({
     resolver: zodResolver(customerBookingRequestSchema),
     defaultValues: {
       vehicleId: vehicle.id,
-      deliveryDate: '',
-      returnDate: '',
+      deliveryDate: seededDelivery,
+      returnDate: seededReturn,
       mode: 'with_driver',
       customerName: initialCustomerName,
-      contactNumber: '',
+      contactNumber: initialContactNumber,
+      whatsappUpdates: initialWhatsAppUpdates,
       address: '',
       city: initialCity || vehicle.city || '',
       state: '',
@@ -107,24 +118,45 @@ export function BookingRequestWizard({
 
   useEffect(() => {
     const draft = readBookingWizardDraft(vehicle.id);
-    if (!draft) {
+    const deliveryDate = seededDelivery || draft?.deliveryDate || '';
+    const returnDate = seededReturn || draft?.returnDate || '';
+
+    if (seededDelivery && seededReturn) {
+      writeBookingWizardDraft(vehicle.id, {
+        deliveryDate: seededDelivery,
+        returnDate: seededReturn,
+      });
+    }
+
+    if (!draft && !seededDelivery && !seededReturn) {
       return;
     }
 
     reset({
       vehicleId: vehicle.id,
-      deliveryDate: draft.deliveryDate ?? '',
-      returnDate: draft.returnDate ?? '',
-      mode: draft.mode ?? 'with_driver',
-      customerName: draft.customerName || initialCustomerName,
-      contactNumber: draft.contactNumber ?? '',
-      address: draft.address ?? '',
-      city: draft.city || initialCity || vehicle.city || '',
-      state: draft.state ?? '',
-      zipCode: draft.zipCode ?? '',
-      placeToVisit: draft.placeToVisit ?? '',
+      deliveryDate,
+      returnDate,
+      mode: draft?.mode ?? 'with_driver',
+      customerName: draft?.customerName || initialCustomerName,
+      contactNumber: draft?.contactNumber || initialContactNumber,
+      whatsappUpdates: draft?.whatsappUpdates ?? initialWhatsAppUpdates,
+      address: draft?.address ?? '',
+      city: draft?.city || initialCity || vehicle.city || '',
+      state: draft?.state ?? '',
+      zipCode: draft?.zipCode ?? '',
+      placeToVisit: draft?.placeToVisit ?? '',
     });
-  }, [vehicle.id, vehicle.city, initialCustomerName, initialCity, reset]);
+  }, [
+    vehicle.id,
+    vehicle.city,
+    initialCustomerName,
+    initialCity,
+    initialContactNumber,
+    initialWhatsAppUpdates,
+    seededDelivery,
+    seededReturn,
+    reset,
+  ]);
 
   const deliveryDate = useWatch({ control, name: 'deliveryDate' }) ?? '';
   const returnDate = useWatch({ control, name: 'returnDate' }) ?? '';
@@ -135,6 +167,7 @@ export function BookingRequestWizard({
   const mode = useWatch({ control, name: 'mode' }) ?? 'with_driver';
   const customerName = useWatch({ control, name: 'customerName' }) ?? '';
   const contactNumber = useWatch({ control, name: 'contactNumber' }) ?? '';
+  const whatsappUpdates = useWatch({ control, name: 'whatsappUpdates' }) ?? true;
   const address = useWatch({ control, name: 'address' }) ?? '';
   const city = useWatch({ control, name: 'city' }) ?? '';
   const state = useWatch({ control, name: 'state' }) ?? '';
@@ -162,12 +195,18 @@ export function BookingRequestWizard({
       state: values.state,
       zipCode: values.zipCode,
       placeToVisit: values.placeToVisit ?? '',
+      whatsappUpdates: values.whatsappUpdates,
     };
     writeBookingWizardDraft(vehicle.id, draft);
   };
 
   const persistStepInUrl = (next: BookingWizardStep) => {
+    const values = getValues();
     const params = new URLSearchParams({ vehicle: vehicle.id, step: next });
+    if (values.deliveryDate && values.returnDate) {
+      params.set('from', values.deliveryDate);
+      params.set('to', values.returnDate);
+    }
     router.replace(`${ROUTES.bookingContinue}?${params.toString()}`, { scroll: false });
   };
 
@@ -435,8 +474,35 @@ export function BookingRequestWizard({
                     />
                     {errors.contactNumber ? (
                       <p className="text-sm text-destructive">{errors.contactNumber.message}</p>
-                    ) : null}
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        We use this number for booking updates on WhatsApp when you opt in.
+                      </p>
+                    )}
                   </div>
+
+                  <Controller
+                    control={control}
+                    name="whatsappUpdates"
+                    render={({ field }) => (
+                      <div className="flex items-start gap-3 rounded-md border border-border bg-muted/40 p-4">
+                        <Checkbox
+                          id="whatsappUpdates"
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                          disabled={isLoading}
+                          className="mt-1 size-5"
+                        />
+                        <Label
+                          htmlFor="whatsappUpdates"
+                          className="block leading-relaxed font-normal text-muted-foreground"
+                        >
+                          Send booking updates on WhatsApp to this number (request received,
+                          approval, payment, changes, and cancellations).
+                        </Label>
+                      </div>
+                    )}
+                  />
 
                   <div className="grid gap-2">
                     <Label htmlFor="address">Address</Label>
@@ -547,6 +613,7 @@ export function BookingRequestWizard({
                     <ReviewField label="Full name" value={customerName} />
                     <ReviewField label="Email" value={customerEmail} />
                     <ReviewField label="Contact" value={contactNumber} />
+                    <ReviewField label="WhatsApp updates" value={whatsappUpdates ? 'Yes' : 'No'} />
                     <ReviewField label="PIN code" value={zipCode} />
                     <ReviewField
                       label="Address"

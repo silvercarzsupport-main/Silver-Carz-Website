@@ -88,6 +88,7 @@ describe('customer booking pipeline — request validation', () => {
       deliveryDate,
       returnDate,
       placeToVisit: '',
+      whatsappUpdates: true,
     });
 
     expect(parsed.success).toBe(true);

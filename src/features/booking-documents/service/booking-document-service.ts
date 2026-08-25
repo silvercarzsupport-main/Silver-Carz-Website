@@ -49,6 +49,7 @@ import {
   type BookingRepository,
 } from '@/features/bookings/repository';
 import { APP_ROLES, isStaff, requireUser, type AuthUser } from '@/lib/auth';
+import { notifyBookingDocumentsSubmitted } from '@/lib/notifications/booking-notifications';
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { fromPromise } from '@/services';
@@ -334,6 +335,7 @@ export function createBookingDocumentService(
           );
         }
 
+        notifyBookingDocumentsSubmitted({ booking: data });
         return data;
       });
     },

@@ -23,6 +23,7 @@ export type BookingWizardDraft = {
   readonly state: string;
   readonly zipCode: string;
   readonly placeToVisit: string;
+  readonly whatsappUpdates: boolean;
 };
 
 const STORAGE_PREFIX = 'sc-booking-request:';
