@@ -18,6 +18,7 @@ import { requiredBookingDocumentTypes } from '@/constants/booking-documents';
 import { formatBookingDocumentCompletenessLabel } from '@/features/booking-documents/lib/completeness';
 import { BookingRequestActions } from '@/features/bookings/components/booking-request-actions';
 import { BookingRowActions } from '@/features/bookings/components/booking-row-actions';
+import { BookingPaymentBadge } from '@/features/bookings/components/booking-payment-badge';
 import { BookingStatusBadge } from '@/features/bookings/components/booking-status-badge';
 import {
   BOOKING_LIST_VIEWS,
@@ -158,7 +159,12 @@ export function BookingListTable({ data, state, documentCounts = {} }: BookingLi
         accessorKey: 'status',
         header: 'Status',
         enableSorting: false,
-        cell: ({ row }) => <BookingStatusBadge booking={row.original} />,
+        cell: ({ row }) => (
+          <div className="flex flex-col items-start gap-1">
+            <BookingStatusBadge booking={row.original} />
+            <BookingPaymentBadge booking={row.original} />
+          </div>
+        ),
       },
       {
         id: 'documents',
@@ -409,12 +415,15 @@ export function BookingListTable({ data, state, documentCounts = {} }: BookingLi
                       </p>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <BookingStatusBadge booking={booking} />
-                    <BookingRowActions
-                      bookingId={booking.id}
-                      invoiceNumber={booking.invoice_number}
-                    />
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <div className="flex items-center gap-1">
+                      <BookingStatusBadge booking={booking} />
+                      <BookingRowActions
+                        bookingId={booking.id}
+                        invoiceNumber={booking.invoice_number}
+                      />
+                    </div>
+                    <BookingPaymentBadge booking={booking} />
                   </div>
                 </div>
                 {state.view === BOOKING_LIST_VIEWS.pending ? (

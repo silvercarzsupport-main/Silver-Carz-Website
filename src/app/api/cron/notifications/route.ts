@@ -21,7 +21,7 @@ async function run(): Promise<NextResponse> {
   return NextResponse.json({ processed });
 }
 
-/** Drains the notification outbox (overdue cancels, retries). */
+/** Drains the notification outbox (retries). */
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });

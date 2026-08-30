@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import {
   customerBookingDocumentsPath,
   customerBookingPath,
-  customerBookingPaymentPath,
   ROUTES,
 } from '@/constants/routes';
 import { MyBookingsSubmitToast } from '@/features/customer-booking/components/my-bookings-submit-toast';
@@ -24,9 +23,6 @@ function bookingHref(booking: BookingWithVehicle): string {
     return customerBookingDocumentsPath(booking.id);
   }
   const status = getCustomerRequestStatusPresentation(booking);
-  if (status.paymentAvailable) {
-    return customerBookingPaymentPath(booking.id);
-  }
   return customerBookingPath(booking.id);
 }
 
@@ -110,6 +106,11 @@ export function MyBookingsList({ bookings }: { readonly bookings: readonly Booki
                       >
                         {status.label}
                       </span>
+                      {status.paymentLabel ? (
+                        <span className="rounded-md bg-muted px-3 py-1.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                          {status.paymentLabel}
+                        </span>
+                      ) : null}
                       <Button asChild variant="outline" className="h-10 rounded-md">
                         <Link href={bookingHref(booking)}>{status.ctaLabel}</Link>
                       </Button>

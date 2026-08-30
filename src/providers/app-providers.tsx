@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { portalConfig } from '@/config';
 import { THEME } from '@/constants';
-import { QueryProvider } from '@/providers/query-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
 
 /**
@@ -24,9 +23,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       disableTransitionOnChange
       storageKey={THEME.storageKey}
     >
-      <QueryProvider>
-        <TooltipProvider>{children}</TooltipProvider>
-      </QueryProvider>
+      <TooltipProvider>{children}</TooltipProvider>
     </ThemeProvider>
   );
 }

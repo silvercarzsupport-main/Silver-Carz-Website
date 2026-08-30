@@ -71,7 +71,7 @@ export function BookingRequestActions({
       }
 
       toast.success('Request approved', {
-        description: `Invoice ${result.data.invoice_number} is approved. Payment is now available for the customer.`,
+        description: `Invoice ${result.data.invoice_number} is confirmed. The vehicle is reserved. Payment is due at pickup.`,
       });
       setApproveOpen(false);
       router.refresh();
@@ -132,7 +132,10 @@ export function BookingRequestActions({
             <AlertDialogTitle>Approve this booking request?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>The customer will become eligible for payment. Invoice number stays the same.</p>
+                <p>
+                  The booking will be confirmed and the vehicle will be reserved for these dates.
+                  The customer will be notified that payment is due at vehicle pickup.
+                </p>
                 <dl className="space-y-1 rounded-xl border bg-muted/30 p-3 text-left text-foreground">
                   <div className="flex justify-between gap-3">
                     <dt className="text-muted-foreground">Invoice</dt>

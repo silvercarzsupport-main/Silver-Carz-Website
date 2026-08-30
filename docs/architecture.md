@@ -28,7 +28,7 @@ See also:
 - [Create Vehicle UI](./vehicles-create.md) — `/vehicles/new` Add Vehicle form + image upload
 - [Edit Vehicle UI](./vehicles-edit.md) — `/vehicles/[id]/edit` reuses `VehicleForm`
 - [Vehicle Details UI](./vehicles-details.md) — `/vehicles/[id]` fleet profile workspace
-- [Project conventions](./conventions.md) — naming, git, imports, quality
+- [Pay at vehicle pickup](./pay-at-pickup.md) — booking vs payment status, Mark as Paid
 - [Feature modules](../src/features/README.md) — how to add a domain module
 
 ## Folder structure

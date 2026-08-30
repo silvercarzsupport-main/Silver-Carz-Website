@@ -34,6 +34,7 @@ export function BrandLogo({ size = 36, className, preload = false }: BrandLogoPr
       alt=""
       width={size}
       height={size}
+      sizes={`${size}px`}
       preload={preload}
       aria-hidden="true"
       className={cn('shrink-0 object-contain', className)}

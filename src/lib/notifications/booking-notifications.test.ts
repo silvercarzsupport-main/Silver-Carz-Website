@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BOOKING_NOTIFICATION_EVENTS } from '@/lib/notifications/events';
 import { buildBookingNotificationCopy } from '@/lib/notifications/copy';
 import { toE164Phone, toWhatsAppRecipient } from '@/lib/notifications/phone';
-import { BOOKING_STATUSES } from '@/types/enums';
+import { BOOKING_STATUSES, OFFLINE_PAYMENT_STATUSES } from '@/types/enums';
 import type { Booking } from '@/types';
 
 function booking(overrides: Partial<Booking> = {}): Booking {
@@ -33,7 +33,10 @@ function booking(overrides: Partial<Booking> = {}): Booking {
     status: BOOKING_STATUSES.confirmed,
     notes: null,
     rejection_reason: null,
-    payment_due_at: '2099-01-09T12:00:00.000Z',
+    payment_status: OFFLINE_PAYMENT_STATUSES.unpaid,
+    payment_collected_at: null,
+    payment_collected_by: null,
+    payment_reference: null,
     created_by: 'user-1',
     created_at: '2026-08-17T00:00:00.000Z',
     updated_at: '2026-08-17T00:00:00.000Z',
@@ -53,24 +56,25 @@ describe('toE164Phone', () => {
 });
 
 describe('buildBookingNotificationCopy', () => {
-  it('includes payment CTA on approval', () => {
+  it('says payment is due at pickup on approval', () => {
     const copy = buildBookingNotificationCopy({
       event: BOOKING_NOTIFICATION_EVENTS.bookingApproved,
       booking: booking(),
     });
-    expect(copy.subject).toContain('approved');
+    expect(copy.subject).toContain('confirmed');
     expect(copy.text).toContain('SC-2026-00001');
+    expect(copy.text.toLowerCase()).toContain('collecting the vehicle');
+    expect(copy.text.toLowerCase()).not.toContain('pay now');
     expect(copy.templateParams).toHaveLength(5);
   });
 
-  it('uses expiry copy for unpaid auto-cancels', () => {
+  it('uses generic cancel copy', () => {
     const copy = buildBookingNotificationCopy({
       event: BOOKING_NOTIFICATION_EVENTS.bookingCancelled,
       booking: booking({
         status: BOOKING_STATUSES.cancelled,
-        notes: 'Released automatically because payment was not received in time.',
       }),
     });
-    expect(copy.text).toContain('payment was not received in time');
+    expect(copy.text).toContain('has been cancelled');
   });
 });

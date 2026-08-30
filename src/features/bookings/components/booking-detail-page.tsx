@@ -16,25 +16,20 @@ import { BookingBreadcrumb } from '@/features/bookings/components/booking-breadc
 import { BookingDetailActions } from '@/features/bookings/components/booking-detail-actions';
 import { BookingDetailField } from '@/features/bookings/components/booking-detail-field';
 import { BookingDetailSection } from '@/features/bookings/components/booking-detail-section';
+import { BookingPaymentBadge } from '@/features/bookings/components/booking-payment-badge';
 import { BookingPricingSummary } from '@/features/bookings/components/booking-pricing-summary';
 import { BookingStatusBadge } from '@/features/bookings/components/booking-status-badge';
 import { pricingFromBooking } from '@/features/bookings/service/pricing.service';
-import {
-  BOOKING_DISPLAY_STATUSES,
-  getBookingStatusPresentation,
-} from '@/features/bookings/service/status.service';
+import { getBookingStatusPresentation } from '@/features/bookings/service/status.service';
 import { VehicleThumbnail } from '@/features/vehicles/components/vehicle-thumbnail';
 import { formatCurrency, formatDate, formatDateTime, formatNumber } from '@/lib/format';
 import {
-  BOOKING_PAYMENT_STATUS_LABELS,
   BOOKING_STATUSES,
   FUEL_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
-  PAYMENT_PROVIDER_LABELS,
   RENTAL_MODE_LABELS,
   type BookingDocumentSummary,
   type BookingWithVehicle,
-  type PaymentSummary,
 } from '@/types';
 
 type BookingDetailPageProps = {
@@ -42,7 +37,7 @@ type BookingDetailPageProps = {
   readonly createdByLabel?: string | null;
   readonly customerEmail?: string | null;
   readonly documents?: readonly BookingDocumentSummary[];
-  readonly payments?: readonly PaymentSummary[];
+  readonly paymentCollectedByLabel?: string | null;
   readonly loadError?: string;
 };
 
@@ -64,7 +59,7 @@ export function BookingDetailPage({
   createdByLabel,
   customerEmail,
   documents = [],
-  payments = [],
+  paymentCollectedByLabel,
   loadError,
 }: BookingDetailPageProps) {
   if (loadError || !booking) {
@@ -121,22 +116,6 @@ export function BookingDetailPage({
           : ''
       }`;
   const isDenied = booking.status === BOOKING_STATUSES.denied;
-  const isScheduleBooking =
-    statusPresentation.status === BOOKING_DISPLAY_STATUSES.upcoming ||
-    statusPresentation.status === BOOKING_DISPLAY_STATUSES.active ||
-    statusPresentation.status === BOOKING_DISPLAY_STATUSES.completed;
-  const hasPaidOnline = payments.some((payment) => payment.status === 'paid');
-  const hasPendingOnline = payments.some((payment) => payment.status === 'pending');
-  const paymentAvailabilityLabel =
-    isScheduleBooking && (Number(booking.booking_amount) > 0 || hasPaidOnline)
-      ? 'Collected'
-      : isScheduleBooking && hasPendingOnline
-        ? 'Payment pending'
-        : isScheduleBooking && Number(booking.booking_amount) <= 0
-          ? 'Available'
-          : isDenied
-            ? 'Not payable'
-            : '—';
 
   return (
     <PageContainer className="max-w-5xl">
@@ -151,6 +130,7 @@ export function BookingDetailPage({
                   {booking.invoice_number}
                 </h1>
                 <BookingStatusBadge booking={booking} />
+                <BookingPaymentBadge booking={booking} />
               </div>
               <p className="text-base font-medium">{booking.customer_name}</p>
               <p className="text-sm text-muted-foreground">
@@ -300,75 +280,53 @@ export function BookingDetailPage({
         <BookingDetailSection title="Payment Information">
           <dl className="grid gap-4 sm:grid-cols-2">
             <BookingDetailField
-              label="Per Day Charge"
-              value={
-                <span className="tabular-nums">{formatOptionalCurrency(pricing.dailyRate)}</span>
-              }
+              label="Payment status"
+              value={<BookingPaymentBadge booking={booking} />}
             />
             <BookingDetailField
-              label="Rental Charge"
-              value={
-                <span className="tabular-nums">{formatOptionalCurrency(pricing.rentalCharge)}</span>
-              }
-            />
-            <BookingDetailField
-              label="Booking Amount (Paid)"
-              value={
-                <span className="tabular-nums">{formatOptionalCurrency(pricing.amountPaid)}</span>
-              }
-            />
-            <BookingDetailField label="Payment Method" value={paymentMethodLabel} />
-            <BookingDetailField label="Payment" value={paymentAvailabilityLabel} />
-            <BookingDetailField
-              label="Remaining Balance"
-              value={
-                <span className="tabular-nums">
-                  {formatOptionalCurrency(pricing.remainingBalance)}
-                </span>
-              }
-            />
-            <BookingDetailField
-              label="Estimated Amount"
+              label="Total booking amount"
               value={
                 <span className="font-semibold tabular-nums">
                   {formatOptionalCurrency(pricing.grandTotal)}
                 </span>
               }
             />
+            <BookingDetailField
+              label="Amount collected"
+              value={
+                <span className="tabular-nums">{formatOptionalCurrency(pricing.amountPaid)}</span>
+              }
+            />
+            <BookingDetailField
+              label="Remaining balance"
+              value={
+                <span className="tabular-nums">
+                  {formatOptionalCurrency(pricing.remainingBalance)}
+                </span>
+              }
+            />
+            <BookingDetailField label="Payment method" value={paymentMethodLabel} />
+            <BookingDetailField label="Payment reference" value={booking.payment_reference} />
+            <BookingDetailField
+              label="Payment collected"
+              value={
+                booking.payment_collected_at ? formatDateTime(booking.payment_collected_at) : null
+              }
+            />
+            <BookingDetailField label="Recorded by" value={paymentCollectedByLabel} />
+            <BookingDetailField
+              label="Per day charge"
+              value={
+                <span className="tabular-nums">{formatOptionalCurrency(pricing.dailyRate)}</span>
+              }
+            />
+            <BookingDetailField
+              label="Rental charge"
+              value={
+                <span className="tabular-nums">{formatOptionalCurrency(pricing.rentalCharge)}</span>
+              }
+            />
           </dl>
-
-          {payments.length > 0 ? (
-            <div className="mt-5 border-t pt-4">
-              <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Online payment attempts
-              </p>
-              <ul className="space-y-2">
-                {payments.map((payment) => (
-                  <li
-                    key={payment.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 px-3 py-2 text-sm"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium">
-                        {PAYMENT_PROVIDER_LABELS[payment.provider]} ·{' '}
-                        {BOOKING_PAYMENT_STATUS_LABELS[payment.status]}
-                      </p>
-                      <p className="text-xs text-muted-foreground tabular-nums">
-                        {formatDateTime(payment.createdAt)}
-                        {payment.providerOrderId ? ` · ${payment.providerOrderId}` : ''}
-                      </p>
-                    </div>
-                    <p className="font-semibold tabular-nums">
-                      {formatOptionalCurrency(payment.amount)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Paid status becomes authoritative after payment verification (C7).
-              </p>
-            </div>
-          ) : null}
         </BookingDetailSection>
       </div>
 

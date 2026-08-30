@@ -1,8 +1,6 @@
-import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 import { datesOverlap } from '@/features/bookings/lib/date-overlap';
-import { computePaymentDueAt, isPaymentWindowOpen } from '@/features/bookings/lib/payment-window';
 import {
   sniffBookingDocumentMime,
   claimedMimeMatchesSniff,
@@ -14,11 +12,9 @@ import {
   isWithinBookingHorizon,
 } from '@/features/customer-booking/lib/calendar-dates';
 import { getCustomerRequestStatusPresentation } from '@/features/customer-booking/lib/request-status';
-import { getPaymentEligibility } from '@/features/payments/lib/eligibility';
-import { verifyHmacSha256Hex } from '@/features/payments/lib/hmac';
 import { citiesMatch } from '@/config/fleet-cities';
-import { BOOKING_PAYMENT_STATUSES, BOOKING_STATUSES } from '@/types/enums';
-import type { Booking, Payment } from '@/types';
+import { BOOKING_STATUSES, OFFLINE_PAYMENT_STATUSES } from '@/types/enums';
+import type { Booking } from '@/types';
 
 function booking(overrides: Partial<Booking>): Booking {
   return {
@@ -47,28 +43,11 @@ function booking(overrides: Partial<Booking>): Booking {
     status: BOOKING_STATUSES.confirmed,
     notes: null,
     rejection_reason: null,
-    payment_due_at: null,
+    payment_status: OFFLINE_PAYMENT_STATUSES.unpaid,
+    payment_collected_at: null,
+    payment_collected_by: null,
+    payment_reference: null,
     created_by: 'user-1',
-    created_at: '2026-08-17T00:00:00.000Z',
-    updated_at: '2026-08-17T00:00:00.000Z',
-    ...overrides,
-  };
-}
-
-function payment(overrides: Partial<Payment>): Payment {
-  return {
-    id: 'pay-1',
-    booking_id: 'booking-1',
-    customer_id: 'user-1',
-    provider: 'razorpay',
-    status: BOOKING_PAYMENT_STATUSES.pending,
-    amount: 9000,
-    currency: 'INR',
-    provider_order_id: 'order_1',
-    provider_payment_id: null,
-    receipt: null,
-    failure_reason: null,
-    metadata: {},
     created_at: '2026-08-17T00:00:00.000Z',
     updated_at: '2026-08-17T00:00:00.000Z',
     ...overrides,
@@ -80,57 +59,6 @@ describe('datesOverlap', () => {
     expect(datesOverlap('2026-08-10', '2026-08-12', '2026-08-12', '2026-08-14')).toBe(true);
     expect(datesOverlap('2026-08-10', '2026-08-12', '2026-08-13', '2026-08-14')).toBe(false);
     expect(datesOverlap('2026-08-10', '2026-08-10', '2026-08-10', '2026-08-10')).toBe(true);
-  });
-});
-
-describe('getPaymentEligibility', () => {
-  it('blocks payment until documents and approval', () => {
-    expect(
-      getPaymentEligibility(booking({ status: BOOKING_STATUSES.draft, document_submitted: false }))
-        .state,
-    ).toBe('documents_needed');
-    expect(
-      getPaymentEligibility(booking({ status: BOOKING_STATUSES.draft, document_submitted: true }))
-        .state,
-    ).toBe('pending_approval');
-  });
-
-  it('requires payment after approval and confirms after collection', () => {
-    expect(getPaymentEligibility(booking({ status: BOOKING_STATUSES.confirmed })).canPay).toBe(
-      true,
-    );
-    expect(
-      getPaymentEligibility(booking({ status: BOOKING_STATUSES.confirmed, booking_amount: 9000 }))
-        .state,
-    ).toBe('already_paid');
-    expect(
-      getPaymentEligibility(booking({ status: BOOKING_STATUSES.confirmed }), [
-        payment({ status: BOOKING_PAYMENT_STATUSES.paid }),
-      ]).state,
-    ).toBe('already_paid');
-  });
-
-  it('expires unpaid holds after the payment window', () => {
-    const eligibility = getPaymentEligibility(
-      booking({
-        status: BOOKING_STATUSES.confirmed,
-        payment_due_at: '2020-01-01T00:00:00.000Z',
-      }),
-    );
-    expect(eligibility.state).toBe('payment_expired');
-    expect(eligibility.canPay).toBe(false);
-  });
-});
-
-describe('HMAC signatures', () => {
-  it('accepts matching signatures and rejects tampering', () => {
-    const secret = 'whsec_test';
-    const payload = '{"event":"payment.captured"}';
-    const signature = createHmac('sha256', secret).update(payload).digest('hex');
-
-    expect(verifyHmacSha256Hex(secret, payload, signature)).toBe(true);
-    expect(verifyHmacSha256Hex(secret, payload, '00'.repeat(32))).toBe(false);
-    expect(verifyHmacSha256Hex(secret, payload + 'x', signature)).toBe(false);
   });
 });
 
@@ -163,28 +91,22 @@ describe('IST booking horizon', () => {
   });
 });
 
-describe('payment window', () => {
-  it('caps the hold at pickup morning when that is sooner than 24 hours', () => {
-    const due = computePaymentDueAt('2026-08-18', new Date('2026-08-17T10:00:00.000Z'));
-    expect(Date.parse(due)).toBe(Date.parse('2026-08-18T06:00:00+05:30'));
-  });
-
-  it('treats a missing due date as open', () => {
-    expect(isPaymentWindowOpen(null)).toBe(true);
-    expect(
-      isPaymentWindowOpen('2020-01-01T00:00:00.000Z', new Date('2026-08-17T00:00:00.000Z')),
-    ).toBe(false);
-  });
-});
-
 describe('customer status + city matching', () => {
-  it('shows confirmed only after money is collected', () => {
+  it('shows confirmed with due-at-pickup while unpaid', () => {
     expect(getCustomerRequestStatusPresentation(booking({ booking_amount: 0 })).label).toBe(
-      'Approved',
-    );
-    expect(getCustomerRequestStatusPresentation(booking({ booking_amount: 9000 })).label).toBe(
       'Confirmed',
     );
+    expect(getCustomerRequestStatusPresentation(booking({ booking_amount: 0 })).paymentLabel).toBe(
+      'Due at Pickup',
+    );
+    expect(
+      getCustomerRequestStatusPresentation(
+        booking({
+          booking_amount: 9000,
+          payment_status: OFFLINE_PAYMENT_STATUSES.paid,
+        }),
+      ).paymentLabel,
+    ).toBe('Payment Collected');
   });
 
   it('matches fleet cities without case noise', () => {

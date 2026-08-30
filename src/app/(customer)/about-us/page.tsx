@@ -124,7 +124,7 @@ const BOOKING_STEPS = [
   'Select your car and dates on the live availability calendar.',
   'Review and submit your booking request with your details.',
   'Our team reviews and approves the request.',
-  'Pay securely online to confirm your booking.',
+  'Pay the total when you collect the vehicle.',
 ] as const;
 
 function PolicyCard({ item, titleAs: Title }: { item: PolicyItem; titleAs: 'h3' | 'h4' }) {

@@ -1,8 +1,10 @@
 # Silver Carz — Rental Management System
 
-Internal rental and fleet management software for **Silver Carz** (Nagpur, Maharashtra). A dashboard-first application used exclusively by internal staff (max 5 admins — Owner and Manager roles). There is no customer login and no public portal.
+Customer booking portal and staff admin for **Silver Carz** (Nagpur, Maharashtra). Customers browse cars, request bookings, and upload documents. Owners and Managers review documents, approve or deny requests, and record payment collected at vehicle pickup. There is no online payment gateway.
 
-> **Status:** Phase 4.2 — create booking page. Edit / detail booking UI not started.
+> **Current workflow:** city and dates → vehicle → account → request → documents → admin approval (vehicle reserved) → pay at pickup → admin **Mark as Paid**. Email and WhatsApp notifications go through a durable outbox.
+
+See [docs/pay-at-pickup.md](./docs/pay-at-pickup.md) for booking status versus payment status.
 
 ## Tech Stack
 
@@ -14,9 +16,8 @@ Internal rental and fleet management software for **Silver Carz** (Nagpur, Mahar
 | UI components   | [shadcn/ui](https://ui.shadcn.com) (Radix base, CSS variables) |
 | Icons           | Lucide React                                                   |
 | Validation      | Zod                                                            |
-| Forms           | React Hook Form _(add when building forms)_                    |
-| Tables          | TanStack Table _(add when building data tables)_               |
-| Server state    | TanStack Query                                                 |
+| Forms           | React Hook Form                                                |
+| Tables          | TanStack Table                                                 |
 | Notifications   | Sonner                                                         |
 | Theming         | next-themes (light default, system supported, dark prepared)   |
 | Backend         | Supabase (PostgreSQL, Auth, Storage)                           |

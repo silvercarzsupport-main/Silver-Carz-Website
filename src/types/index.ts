@@ -22,11 +22,10 @@ export type { TableColumn, TableSortState } from './table';
 export type { Database, Enums, Json, Tables, TablesInsert, TablesUpdate } from './database';
 
 export type {
-  BookingPaymentStatus,
   BookingStatus,
   FuelType,
+  OfflinePaymentStatus,
   PaymentMethod,
-  PaymentProvider,
   RentalMode,
   UserRole,
   AppRole,
@@ -35,9 +34,6 @@ export type {
 } from './enums';
 
 export {
-  BOOKING_PAYMENT_STATUSES,
-  BOOKING_PAYMENT_STATUS_LABELS,
-  BOOKING_PAYMENT_STATUS_VALUES,
   BOOKING_STATUSES,
   BOOKING_STATUS_LABELS,
   BOOKING_STATUS_OPTIONS,
@@ -46,23 +42,22 @@ export {
   FUEL_TYPE_LABELS,
   FUEL_TYPE_OPTIONS,
   FUEL_TYPE_VALUES,
-  isBookingPaymentStatus,
   isBookingStatus,
   isFuelType,
+  isOfflinePaymentStatus,
   isPaymentMethod,
-  isPaymentProvider,
   isRentalMode,
   isTransmissionType,
   isUserRole,
   isVehicleAvailabilityStatus,
   isVehicleBookableStatus,
+  OFFLINE_PAYMENT_STATUSES,
+  OFFLINE_PAYMENT_STATUS_LABELS,
+  OFFLINE_PAYMENT_STATUS_VALUES,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHOD_OPTIONS,
   PAYMENT_METHOD_VALUES,
-  PAYMENT_PROVIDERS,
-  PAYMENT_PROVIDER_LABELS,
-  PAYMENT_PROVIDER_VALUES,
   RENTAL_MODES,
   RENTAL_MODE_LABELS,
   RENTAL_MODE_OPTIONS,
@@ -105,15 +100,6 @@ export type {
 } from './booking-document';
 
 export { toBookingDocumentSummary } from './booking-document';
-
-export type {
-  Payment,
-  PaymentCreateInput,
-  PaymentSummary,
-  PaymentUpdateInput,
-  RazorpayCheckoutSession,
-} from './payment';
-export { toPaymentSummary } from './payment';
 
 export type {
   PublicVehicle,

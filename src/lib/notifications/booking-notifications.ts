@@ -82,32 +82,17 @@ export function notifyBookingRejected(input: {
   );
 }
 
-export function notifyBookingPaymentFailed(input: {
+export function notifyBookingPaymentCollected(input: {
   readonly booking: Booking;
-  readonly paymentId?: string;
-}): void {
-  dispatch(
-    emit({
-      event: BOOKING_NOTIFICATION_EVENTS.paymentFailed,
-      booking: input.booking,
-      suffix: input.paymentId,
-    }),
-    'payment-failed',
-  );
-}
-
-export function notifyBookingPaymentConfirmed(input: {
-  readonly booking: Booking;
-  readonly customerEmail?: string;
   readonly amountPaid: number;
 }): void {
   dispatch(
     emit({
-      event: BOOKING_NOTIFICATION_EVENTS.paymentConfirmed,
+      event: BOOKING_NOTIFICATION_EVENTS.paymentCollected,
       booking: input.booking,
       amountPaid: input.amountPaid,
     }),
-    'payment-confirmed',
+    'payment-collected',
   );
 }
 

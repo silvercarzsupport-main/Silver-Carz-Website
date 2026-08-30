@@ -185,7 +185,10 @@ export type Database = {
           status: Database['public']['Enums']['booking_status'];
           notes: string | null;
           rejection_reason: string | null;
-          payment_due_at: string | null;
+          payment_status: Database['public']['Enums']['offline_payment_status'];
+          payment_collected_at: string | null;
+          payment_collected_by: string | null;
+          payment_reference: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -216,7 +219,10 @@ export type Database = {
           status?: Database['public']['Enums']['booking_status'];
           notes?: string | null;
           rejection_reason?: string | null;
-          payment_due_at?: string | null;
+          payment_status?: Database['public']['Enums']['offline_payment_status'];
+          payment_collected_at?: string | null;
+          payment_collected_by?: string | null;
+          payment_reference?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -247,7 +253,10 @@ export type Database = {
           status?: Database['public']['Enums']['booking_status'];
           notes?: string | null;
           rejection_reason?: string | null;
-          payment_due_at?: string | null;
+          payment_status?: Database['public']['Enums']['offline_payment_status'];
+          payment_collected_at?: string | null;
+          payment_collected_by?: string | null;
+          payment_reference?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -263,6 +272,13 @@ export type Database = {
           {
             foreignKeyName: 'bookings_created_by_fkey';
             columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'bookings_payment_collected_by_fkey';
+            columns: ['payment_collected_by'];
             isOneToOne: false;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
@@ -316,72 +332,6 @@ export type Database = {
           },
           {
             foreignKeyName: 'booking_documents_customer_id_fkey';
-            columns: ['customer_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      payments: {
-        Row: {
-          id: string;
-          booking_id: string;
-          customer_id: string;
-          provider: Database['public']['Enums']['payment_provider'];
-          status: Database['public']['Enums']['booking_payment_status'];
-          amount: number;
-          currency: string;
-          provider_order_id: string | null;
-          provider_payment_id: string | null;
-          receipt: string | null;
-          failure_reason: string | null;
-          metadata: Json;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          booking_id: string;
-          customer_id: string;
-          provider?: Database['public']['Enums']['payment_provider'];
-          status?: Database['public']['Enums']['booking_payment_status'];
-          amount: number;
-          currency?: string;
-          provider_order_id?: string | null;
-          provider_payment_id?: string | null;
-          receipt?: string | null;
-          failure_reason?: string | null;
-          metadata?: Json;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          booking_id?: string;
-          customer_id?: string;
-          provider?: Database['public']['Enums']['payment_provider'];
-          status?: Database['public']['Enums']['booking_payment_status'];
-          amount?: number;
-          currency?: string;
-          provider_order_id?: string | null;
-          provider_payment_id?: string | null;
-          receipt?: string | null;
-          failure_reason?: string | null;
-          metadata?: Json;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'payments_booking_id_fkey';
-            columns: ['booking_id'];
-            isOneToOne: false;
-            referencedRelation: 'bookings';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'payments_customer_id_fkey';
             columns: ['customer_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
@@ -522,55 +472,6 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['bookings']['Row'];
       };
-      create_booking_payment_attempt: {
-        Args: {
-          p_booking_id: string;
-          p_amount: number;
-          p_currency: string;
-          p_provider_order_id: string;
-          p_receipt?: string | null;
-          p_metadata?: Json;
-        };
-        Returns: Database['public']['Tables']['payments']['Row'];
-      };
-      update_own_payment_attempt_outcome: {
-        Args: {
-          p_payment_id: string;
-          p_status: Database['public']['Enums']['booking_payment_status'];
-          p_provider_payment_id?: string | null;
-          p_failure_reason?: string | null;
-        };
-        Returns: Database['public']['Tables']['payments']['Row'];
-      };
-      attach_payment_provider_payment_id: {
-        Args: {
-          p_provider_order_id: string;
-          p_provider_payment_id: string;
-        };
-        Returns: Database['public']['Tables']['payments']['Row'];
-      };
-      complete_booking_payment: {
-        Args: {
-          p_provider_order_id: string;
-          p_provider_payment_id: string;
-          p_amount: number;
-          p_currency: string;
-          p_payment_method?: Database['public']['Enums']['payment_method'];
-        };
-        Returns: Database['public']['Tables']['payments']['Row'];
-      };
-      mark_payment_attempt_failed_by_order: {
-        Args: {
-          p_provider_order_id: string;
-          p_provider_payment_id?: string | null;
-          p_failure_reason?: string | null;
-        };
-        Returns: Database['public']['Tables']['payments']['Row'];
-      };
-      release_overdue_unpaid_bookings: {
-        Args: Record<PropertyKey, never>;
-        Returns: number;
-      };
       insert_booking_notification_outbox: {
         Args: {
           p_idempotency_key: string;
@@ -604,8 +505,7 @@ export type Database = {
       rental_mode: 'with_driver' | 'without_driver';
       payment_method: 'cash' | 'upi' | 'card' | 'bank_transfer' | 'cheque' | 'other';
       booking_status: 'draft' | 'confirmed' | 'ongoing' | 'completed' | 'cancelled' | 'denied';
-      payment_provider: 'razorpay';
-      booking_payment_status: 'pending' | 'failed' | 'cancelled' | 'paid';
+      offline_payment_status: 'unpaid' | 'paid';
     };
     CompositeTypes: Record<string, never>;
   };

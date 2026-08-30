@@ -3,8 +3,7 @@ export const BOOKING_NOTIFICATION_EVENTS = {
   documentsSubmitted: 'documents_submitted',
   bookingApproved: 'booking_approved',
   bookingRejected: 'booking_rejected',
-  paymentFailed: 'payment_failed',
-  paymentConfirmed: 'payment_confirmed',
+  paymentCollected: 'payment_collected',
   bookingCancelled: 'booking_cancelled',
   bookingUpdated: 'booking_updated',
 } as const;

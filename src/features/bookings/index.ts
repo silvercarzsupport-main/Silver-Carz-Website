@@ -120,6 +120,7 @@ export {
   getBookingWithVehicle,
   listBookings,
   rejectBooking,
+  markBookingPaid,
   searchBookings,
   updateBooking,
 } from './actions';
@@ -131,6 +132,7 @@ export {
   BookingForm,
   BookingList,
   BookingListSkeleton,
+  BookingPaymentBadge,
   BookingPricingSummary,
   BookingStatusBadge,
   CreateBookingForm,

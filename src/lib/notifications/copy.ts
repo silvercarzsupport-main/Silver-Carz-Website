@@ -1,15 +1,11 @@
 import { appConfig } from '@/config/app';
-import {
-  customerBookingConfirmationPath,
-  customerBookingDocumentsPath,
-  customerBookingPath,
-  customerBookingPaymentPath,
-} from '@/constants/routes';
+import { customerBookingDocumentsPath, customerBookingPath } from '@/constants/routes';
 import type { BookingNotificationEvent } from '@/lib/notifications/events';
 import { BOOKING_NOTIFICATION_EVENTS } from '@/lib/notifications/events';
 import { WHATSAPP_TEMPLATE_NAMES } from '@/lib/notifications/template-names';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
 import type { Booking } from '@/types';
+import { PAYMENT_METHOD_LABELS } from '@/types/enums';
 
 export type BookingNotificationContext = {
   readonly event: BookingNotificationEvent;
@@ -57,14 +53,6 @@ function dash(value: string | null | undefined): string {
   return trimmed ? trimmed : '—';
 }
 
-function wrapHtml(lines: readonly string[]): string {
-  return lines.join('');
-}
-
-function isUnpaidHoldRelease(booking: Booking): boolean {
-  return (booking.notes ?? '').includes('payment was not received in time');
-}
-
 /**
  * Builds email + WhatsApp template copy for a booking lifecycle event.
  * WhatsApp body parameters must match the Meta templates in `.env.example`.
@@ -77,15 +65,17 @@ export function buildBookingNotificationCopy(context: BookingNotificationContext
   const pickup = formatDate(booking.delivery_date);
   const ret = formatDate(booking.return_date);
   const bookingUrl = absoluteUrl(customerBookingPath(booking.id));
-  const payUrl = absoluteUrl(customerBookingPaymentPath(booking.id));
   const docsUrl = absoluteUrl(customerBookingDocumentsPath(booking.id));
-  const confirmUrl = absoluteUrl(customerBookingConfirmationPath(booking.id));
-  const payBy = booking.payment_due_at ? formatDateTime(booking.payment_due_at) : 'soon';
   const amount = formatCurrency(context.amountPaid ?? (Number(booking.booking_amount) || 0), {
     maximumFractionDigits: 0,
   });
+  const total = formatCurrency(Number(booking.total_amount) || 0, { maximumFractionDigits: 0 });
+  const method = booking.payment_method ? PAYMENT_METHOD_LABELS[booking.payment_method] : '—';
   const reason = dash(context.reason ?? booking.rejection_reason);
   const updateSummary = dash(context.updateSummary ?? 'Your booking details were updated.');
+  const collectedAt = booking.payment_collected_at
+    ? formatDateTime(booking.payment_collected_at)
+    : '—';
 
   switch (event) {
     case BOOKING_NOTIFICATION_EVENTS.bookingRequested:
@@ -130,25 +120,27 @@ export function buildBookingNotificationCopy(context: BookingNotificationContext
       };
     case BOOKING_NOTIFICATION_EVENTS.bookingApproved:
       return {
-        subject: `${company} — booking approved (${invoice})`,
+        subject: `${company} — booking confirmed (${invoice})`,
         text: [
           greeting(booking.customer_name),
           '',
-          `Your booking request ${invoice} has been approved.`,
+          `Your booking ${invoice} is confirmed. The vehicle is reserved for your dates.`,
           `Pickup: ${pickup} · Return: ${ret}`,
-          `Please complete payment by ${payBy} to confirm the car.`,
+          `Total amount: ${total}`,
+          'Please pay the total amount when collecting the vehicle. Carry your original documents for verification.',
           '',
-          `Pay now: ${payUrl}`,
+          `View booking: ${bookingUrl}`,
         ].join('\n'),
         html: wrapHtml([
           `<p>${greeting(booking.customer_name)}</p>`,
-          `<p>Your booking request <strong>${invoice}</strong> has been approved.</p>`,
+          `<p>Your booking <strong>${invoice}</strong> is confirmed. The vehicle is reserved for your dates.</p>`,
           `<p>Pickup: <strong>${pickup}</strong><br/>Return: <strong>${ret}</strong></p>`,
-          `<p>Please complete payment by <strong>${payBy}</strong> to confirm the car.</p>`,
-          `<p><a href="${payUrl}">Pay now</a></p>`,
+          `<p>Total amount: <strong>${total}</strong></p>`,
+          '<p>Please pay the total amount when collecting the vehicle. Carry your original documents for verification.</p>',
+          `<p><a href="${bookingUrl}">View booking</a></p>`,
         ]),
         templateName: WHATSAPP_TEMPLATE_NAMES.bookingApproved,
-        templateParams: [name, invoice, pickup, ret, payBy],
+        templateParams: [name, invoice, pickup, ret, total],
       };
     case BOOKING_NOTIFICATION_EVENTS.bookingRejected:
       return {
@@ -170,65 +162,47 @@ export function buildBookingNotificationCopy(context: BookingNotificationContext
         templateName: WHATSAPP_TEMPLATE_NAMES.bookingRejected,
         templateParams: [name, invoice, reason],
       };
-    case BOOKING_NOTIFICATION_EVENTS.paymentFailed:
+    case BOOKING_NOTIFICATION_EVENTS.paymentCollected:
       return {
-        subject: `${company} — payment unsuccessful (${invoice})`,
+        subject: `${company} — payment recorded (${invoice})`,
         text: [
           greeting(booking.customer_name),
           '',
-          `We could not complete payment for booking ${invoice}. No charge was captured.`,
-          `You can try again before ${payBy}.`,
+          `Payment of ${amount} has been recorded for booking ${invoice}.`,
+          `Method: ${method}`,
+          `Collected: ${collectedAt}`,
+          'Your booking remains confirmed.',
           '',
-          `Retry payment: ${payUrl}`,
+          `View booking: ${bookingUrl}`,
         ].join('\n'),
         html: wrapHtml([
           `<p>${greeting(booking.customer_name)}</p>`,
-          `<p>We could not complete payment for booking <strong>${invoice}</strong>. No charge was captured.</p>`,
-          `<p>You can try again before <strong>${payBy}</strong>.</p>`,
-          `<p><a href="${payUrl}">Retry payment</a></p>`,
+          `<p>Payment of <strong>${amount}</strong> has been recorded for booking <strong>${invoice}</strong>.</p>`,
+          `<p>Method: <strong>${method}</strong></p>`,
+          '<p>Your booking remains confirmed.</p>',
+          `<p><a href="${bookingUrl}">View booking</a></p>`,
         ]),
-        templateName: WHATSAPP_TEMPLATE_NAMES.paymentFailed,
-        templateParams: [name, invoice, payBy],
+        templateName: WHATSAPP_TEMPLATE_NAMES.paymentCollected,
+        templateParams: [name, invoice, amount, method],
       };
-    case BOOKING_NOTIFICATION_EVENTS.paymentConfirmed:
-      return {
-        subject: `${company} — booking confirmed (${invoice})`,
-        text: [
-          greeting(booking.customer_name),
-          '',
-          `Payment of ${amount} received for booking ${invoice}. Your car is reserved.`,
-          `Pickup: ${pickup} · Return: ${ret}`,
-          '',
-          `View confirmation: ${confirmUrl}`,
-        ].join('\n'),
-        html: wrapHtml([
-          `<p>${greeting(booking.customer_name)}</p>`,
-          `<p>Payment of <strong>${amount}</strong> received for booking <strong>${invoice}</strong>. Your car is reserved.</p>`,
-          `<p>Pickup: <strong>${pickup}</strong><br/>Return: <strong>${ret}</strong></p>`,
-          `<p><a href="${confirmUrl}">View confirmation</a></p>`,
-        ]),
-        templateName: WHATSAPP_TEMPLATE_NAMES.paymentConfirmed,
-        templateParams: [name, invoice, amount, pickup, ret],
-      };
-    case BOOKING_NOTIFICATION_EVENTS.bookingCancelled: {
-      const unpaid = isUnpaidHoldRelease(booking);
-      const body = unpaid
-        ? `Booking ${invoice} was cancelled because payment was not received in time. The car is available again.`
-        : `Booking ${invoice} has been cancelled.`;
+    case BOOKING_NOTIFICATION_EVENTS.bookingCancelled:
       return {
         subject: `${company} — booking cancelled (${invoice})`,
-        text: [greeting(booking.customer_name), '', body, '', `View details: ${bookingUrl}`].join(
-          '\n',
-        ),
+        text: [
+          greeting(booking.customer_name),
+          '',
+          `Booking ${invoice} has been cancelled.`,
+          '',
+          `View details: ${bookingUrl}`,
+        ].join('\n'),
         html: wrapHtml([
           `<p>${greeting(booking.customer_name)}</p>`,
-          `<p>${body}</p>`,
+          `<p>Booking <strong>${invoice}</strong> has been cancelled.</p>`,
           `<p><a href="${bookingUrl}">View details</a></p>`,
         ]),
         templateName: WHATSAPP_TEMPLATE_NAMES.bookingCancelled,
-        templateParams: [name, invoice, unpaid ? 'Payment window expired' : 'Cancelled'],
+        templateParams: [name, invoice, 'Cancelled'],
       };
-    }
     case BOOKING_NOTIFICATION_EVENTS.bookingUpdated:
       return {
         subject: `${company} — booking updated (${invoice})`,
@@ -252,4 +226,8 @@ export function buildBookingNotificationCopy(context: BookingNotificationContext
         templateParams: [name, invoice, pickup, ret],
       };
   }
+}
+
+function wrapHtml(lines: readonly string[]): string {
+  return lines.join('');
 }

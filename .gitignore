@@ -22,7 +22,9 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
+.cursor/
 
 # debug
 npm-debug.log*

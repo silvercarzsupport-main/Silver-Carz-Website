@@ -25,7 +25,10 @@ import {
   getBookingDocumentRepository,
   type BookingDocumentRepository,
 } from '@/features/booking-documents/repository/booking-document-repository';
-import { computePaymentDueAt } from '@/features/bookings/lib/payment-window';
+import {
+  buildOfflinePaymentCollectionUpdate,
+  parsePaymentReference,
+} from '@/features/bookings/lib/offline-payment';
 import {
   createBookingRepository,
   getBookingRepository,
@@ -61,6 +64,7 @@ import { AppError } from '@/lib/errors';
 import {
   notifyBookingApproved,
   notifyBookingCancelled,
+  notifyBookingPaymentCollected,
   notifyBookingRejected,
   notifyBookingUpdated,
 } from '@/lib/notifications/booking-notifications';
@@ -68,6 +72,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import { fromPromise } from '@/services';
 import type {
+  ApiResponse,
   Booking,
   BookingCreateInput,
   BookingListFilters,
@@ -75,8 +80,8 @@ import type {
   BookingUpdateInput,
   BookingWithVehicle,
   PaginatedResult,
+  PaymentMethod,
 } from '@/types';
-import type { ApiResponse } from '@/types';
 import {
   bookingListFiltersSchema,
   bookingListQuerySchema,
@@ -85,7 +90,7 @@ import {
   type CreateBookingValues,
   type UpdateBookingValues,
 } from '@/validations';
-import { BOOKING_STATUSES } from '@/types/enums';
+import { BOOKING_STATUSES, OFFLINE_PAYMENT_STATUSES } from '@/types/enums';
 
 export interface BookingServiceDeps {
   readonly repository?: BookingRepository;
@@ -104,10 +109,19 @@ export interface BookingService {
   updateBooking(id: string, input: unknown): Promise<ApiResponse<Booking>>;
   /** Soft-delete (status → cancelled). Preferred application delete. */
   deleteBooking(id: string): Promise<ApiResponse<Booking>>;
-  /** Graduate a draft customer request into a confirmed fleet booking (payment-eligible). */
+  /** Graduate a draft customer request into a confirmed fleet booking (schedule-blocking). */
   approveBooking(id: string): Promise<ApiResponse<Booking>>;
   /** Deny a draft customer request (status → denied, historic only). */
   rejectBooking(id: string, reason: string): Promise<ApiResponse<Booking>>;
+  /** Record pay-at-pickup collection for a confirmed/ongoing/completed booking. */
+  markBookingPaid(
+    id: string,
+    input: {
+      readonly paymentMethod: PaymentMethod;
+      readonly paymentReference?: string | null;
+      readonly submittedAmount?: number | null;
+    },
+  ): Promise<ApiResponse<Booking>>;
   /** Permanent delete — reserved for trusted admin flows. */
   permanentlyDeleteBooking(id: string): Promise<ApiResponse<null>>;
   getBooking(id: string): Promise<ApiResponse<Booking>>;
@@ -260,6 +274,9 @@ function applyCreateDerivedFields(
     booking_amount: priced.booking_amount,
     total_amount: priced.total_amount,
     status,
+    payment_status: OFFLINE_PAYMENT_STATUSES.unpaid,
+    payment_collected_at: null,
+    payment_collected_by: null,
     created_by: values.created_by ?? actor.id,
   };
 }
@@ -536,7 +553,7 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
         await assertRequiredDocumentsComplete(id);
 
         // Existing architecture: approval graduates draft → schedule-blocking
-        // confirmed/ongoing/completed. Payment collection (C6) uses booking_amount.
+        // confirmed/ongoing/completed. Payment stays unpaid until pickup.
         const status = statusEngine.resolvePersistedStatus({
           status: undefined,
           delivery_date: existing.delivery_date,
@@ -563,7 +580,6 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
         const approved = await repository.updateIfStatus(id, BOOKING_STATUSES.draft, {
           status,
           rejection_reason: null,
-          payment_due_at: computePaymentDueAt(existing.delivery_date),
         });
 
         if (!approved) {
@@ -575,12 +591,10 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
         const customerId = approved.created_by;
         if (customerId) {
           const customerProfile = await getProfileById(customerId);
-          if (customerProfile?.email) {
-            notifyBookingApproved({
-              booking: approved,
-              customerEmail: customerProfile.email,
-            });
-          }
+          notifyBookingApproved({
+            booking: approved,
+            customerEmail: customerProfile?.email,
+          });
         }
 
         return approved;
@@ -634,6 +648,44 @@ export function createBookingService(deps: BookingServiceDeps = {}): BookingServ
         }
 
         return denied;
+      });
+    },
+
+    markBookingPaid(id, input) {
+      return fromPromise(async () => {
+        const actor = await requirePerm(PERMISSIONS.bookingsWrite);
+        const repository = await getRepository();
+        const existing = await repository.findById(id);
+
+        if (!existing) {
+          throw createBookingNotFoundError();
+        }
+
+        const patch = buildOfflinePaymentCollectionUpdate(existing, {
+          paymentMethod: input.paymentMethod,
+          paymentReference: parsePaymentReference(input.paymentReference),
+          submittedAmount: input.submittedAmount,
+          collectedBy: actor.id,
+        });
+
+        const collected = await repository.updateIfUnpaid(id, patch);
+
+        if (!collected) {
+          const latest = await repository.findById(id);
+          if (!latest) {
+            throw createBookingNotFoundError();
+          }
+          throw createBookingValidationError(
+            'Payment has already been recorded for this booking.',
+          );
+        }
+
+        notifyBookingPaymentCollected({
+          booking: collected,
+          amountPaid: Number(collected.booking_amount),
+        });
+
+        return collected;
       });
     },
 

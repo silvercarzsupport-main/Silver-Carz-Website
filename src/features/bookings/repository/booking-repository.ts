@@ -56,6 +56,11 @@ export interface BookingRepository {
     expectedStatus: Booking['status'],
     input: BookingUpdateInput,
   ): Promise<Booking | null>;
+  /**
+   * Conditional update for unpaid → paid collection.
+   * Returns null when the row is missing, not collectible, or already paid.
+   */
+  updateIfUnpaid(id: string, input: BookingUpdateInput): Promise<Booking | null>;
   /** Permanent delete. Prefer `softDelete` for application flows. */
   delete(id: string): Promise<void>;
   softDelete(id: string): Promise<Booking>;
@@ -328,6 +333,27 @@ export function createBookingRepository(client: TypedSupabaseClient): BookingRep
         .update(input)
         .eq('id', id)
         .eq('status', expectedStatus)
+        .select('*')
+        .maybeSingle();
+
+      if (error) {
+        throw mapPersistenceError(error, input.invoice_number);
+      }
+
+      return data;
+    },
+
+    async updateIfUnpaid(id, input) {
+      const { data, error } = await client
+        .from('bookings')
+        .update(input)
+        .eq('id', id)
+        .eq('payment_status', 'unpaid')
+        .in('status', [
+          BOOKING_STATUSES.confirmed,
+          BOOKING_STATUSES.ongoing,
+          BOOKING_STATUSES.completed,
+        ])
         .select('*')
         .maybeSingle();
 

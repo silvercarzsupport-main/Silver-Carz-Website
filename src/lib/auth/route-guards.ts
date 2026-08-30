@@ -129,7 +129,7 @@ export function isCustomerProtectedRoute(pathname: string): boolean {
     return true;
   }
 
-  // /booking/{id} and nested workflow steps (documents / payment / confirmation)
+  // /booking/{id} and nested workflow steps (documents; legacy payment URLs redirect)
   if (path === '/booking' || path.startsWith('/booking/')) {
     return true;
   }

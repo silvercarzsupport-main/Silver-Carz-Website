@@ -104,13 +104,3 @@ export function customerBookingPath(bookingId: string): string {
 export function customerBookingDocumentsPath(bookingId: string): string {
   return `/booking/${bookingId}/documents`;
 }
-
-/** Customer booking payment step after admin approval (C6). */
-export function customerBookingPaymentPath(bookingId: string): string {
-  return `/booking/${bookingId}/payment`;
-}
-
-/** Customer booking confirmation / payment-processing return step. */
-export function customerBookingConfirmationPath(bookingId: string): string {
-  return `/booking/${bookingId}/confirmation`;
-}

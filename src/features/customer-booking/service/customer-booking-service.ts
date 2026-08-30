@@ -10,7 +10,7 @@
  * - daily_charge (vehicle rate)
  * - invoice_number (sequence RPC)
  * - duration / total_amount (Pricing Engine)
- * - booking_amount = 0, payment_method = null, document_submitted = false
+ * - booking_amount = 0, payment_method = null, payment_status = unpaid, document_submitted = false
  */
 
 import 'server-only';
@@ -421,6 +421,7 @@ export function createCustomerBookingService(
           status: BOOKING_STATUSES.draft,
           document_submitted: false,
           payment_method: null,
+          payment_status: 'unpaid',
           driver_name: null,
           fuel_range: null,
           notes: null,

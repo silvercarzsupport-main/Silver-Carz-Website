@@ -1,5 +1,5 @@
 /**
- * Supabase service-role client for privileged server jobs (e.g. payment webhooks).
+ * Supabase service-role client for privileged server jobs (notification outbox).
  *
  * NEVER import this from Client Components or expose the service role key.
  */
@@ -16,7 +16,7 @@ function requireServiceRoleKey(): string {
   if (!value) {
     throw new Error(
       'Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY. ' +
-        'Required for privileged server operations such as payment webhooks.',
+        'Required for privileged server operations such as the notification outbox.',
     );
   }
   return value;

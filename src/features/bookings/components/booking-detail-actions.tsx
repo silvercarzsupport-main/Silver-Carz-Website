@@ -35,19 +35,18 @@ import { bookingEditPath, ROUTES } from '@/constants/routes';
 import { approveBooking } from '@/features/bookings/actions/approve-booking';
 import { deleteBooking } from '@/features/bookings/actions/delete-booking';
 import { rejectBooking } from '@/features/bookings/actions/reject-booking';
+import { MarkBookingPaidDialog } from '@/features/bookings/components/mark-booking-paid-dialog';
+import { getOfflinePaymentPresentation } from '@/features/bookings/lib/offline-payment';
 import {
   BOOKING_DISPLAY_STATUSES,
   resolveBookingDisplayStatus,
-  type BookingStatusInput,
 } from '@/features/bookings/service/status.service';
 import { formatDate } from '@/lib/format';
+import type { Booking } from '@/types';
 
 type BookingDetailActionsProps = {
   readonly bookingId: string;
-  readonly booking: BookingStatusInput & {
-    readonly invoice_number: string;
-    readonly customer_name: string;
-  };
+  readonly booking: Booking;
   readonly vehicleName: string;
   readonly documentsComplete: boolean;
   readonly documentsIncompleteMessage?: string | null;
@@ -63,6 +62,7 @@ export function BookingDetailActions({
   const [isPending, startTransition] = useTransition();
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [collectOpen, setCollectOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectError, setRejectError] = useState<string | null>(null);
 
@@ -70,6 +70,7 @@ export function BookingDetailActions({
   const isDraft = display === BOOKING_DISPLAY_STATUSES.draft;
   const isTerminal =
     display === BOOKING_DISPLAY_STATUSES.cancelled || display === BOOKING_DISPLAY_STATUSES.denied;
+  const payment = getOfflinePaymentPresentation(booking);
 
   const handleApproveRequest = () => {
     if (!isDraft) {
@@ -92,7 +93,7 @@ export function BookingDetailActions({
       }
 
       toast.success('Request approved', {
-        description: `Invoice ${result.data.invoice_number} is approved. Payment is now available for the customer.`,
+        description: `Invoice ${result.data.invoice_number} is confirmed. The vehicle is reserved. The customer will be told payment is due at pickup.`,
       });
       window.location.assign(ROUTES.bookingsConfirmed);
     });
@@ -185,8 +186,9 @@ export function BookingDetailActions({
                 <AlertDialogDescription asChild>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <p>
-                      The customer will become eligible for payment. The booking number stays{' '}
-                      {booking.invoice_number}.
+                      The booking will be confirmed and the vehicle will be reserved for these
+                      dates. The customer will be notified that payment is due at vehicle pickup.
+                      The booking number stays {booking.invoice_number}.
                     </p>
                     <dl className="space-y-1 rounded-xl border bg-muted/30 p-3 text-left text-foreground">
                       <div className="flex justify-between gap-3">
@@ -308,6 +310,31 @@ export function BookingDetailActions({
           </Dialog>
         </>
       ) : null}
+
+      {!isDraft && payment.canCollect ? (
+        <Button
+          type="button"
+          size="sm"
+          disabled={isPending}
+          aria-busy={isPending}
+          onClick={() => setCollectOpen(true)}
+        >
+          Mark as Paid
+        </Button>
+      ) : null}
+
+      {!isDraft && payment.collected ? (
+        <Button type="button" size="sm" variant="secondary" disabled aria-disabled="true">
+          Paid
+        </Button>
+      ) : null}
+
+      <MarkBookingPaidDialog
+        booking={booking}
+        vehicleName={vehicleName}
+        open={collectOpen}
+        onOpenChange={setCollectOpen}
+      />
 
       {!documentsComplete && isDraft && documentsIncompleteMessage ? (
         <p className="col-span-2 text-sm text-destructive sm:basis-full" role="status">
