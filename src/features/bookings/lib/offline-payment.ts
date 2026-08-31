@@ -27,9 +27,12 @@ export const COLLECTIBLE_BOOKING_STATUSES = [
 export type CollectibleBookingStatus = (typeof COLLECTIBLE_BOOKING_STATUSES)[number];
 
 export function isCollectibleBookingStatus(
-  status: BookingStatus,
+  status: unknown,
 ): status is CollectibleBookingStatus {
-  return (COLLECTIBLE_BOOKING_STATUSES as readonly BookingStatus[]).includes(status);
+  return (
+    typeof status === 'string' &&
+    (COLLECTIBLE_BOOKING_STATUSES as readonly string[]).includes(status)
+  );
 }
 
 export type OfflinePaymentBadgeLabel =
