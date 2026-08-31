@@ -63,6 +63,11 @@ export default async function CustomerBookingDocumentsPage({
     redirect(customerBookingPath(bookingId));
   }
 
+  // After submit, status lives on the booking page — don't leave users on upload.
+  if (booking.document_submitted) {
+    redirect(customerBookingPath(bookingId));
+  }
+
   const documentsResult = await listOwnBookingDocuments(bookingId);
   if (!documentsResult.success) {
     notFound();
@@ -70,7 +75,7 @@ export default async function CustomerBookingDocumentsPage({
 
   return (
     <>
-      <BookingProgressSteps activeStep={booking.document_submitted ? 5 : 4} />
+      <BookingProgressSteps activeStep={4} />
       <CustomerContainer className="max-w-5xl py-8 sm:py-12">
         <BookingDocumentsPanel booking={booking} initialDocuments={documentsResult.data} />
       </CustomerContainer>

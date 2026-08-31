@@ -5,9 +5,9 @@
 -- Does not edit previously applied migration files.
 --
 -- 1. Record collection on bookings (payment_status unpaid|paid).
--- 2. Backfill from booking_amount and any paid gateway rows.
+-- 2. Backfill paid from booking_amount (this project never had a gateway table).
 -- 3. Drop payment-window auto-cancel (cron + RPC).
--- 4. Drop payments table and Razorpay RPCs after migrating paid facts.
+-- 4. Drop Razorpay RPCs and related types if they exist.
 -- 5. Notify payment_collected instead of online payment_confirmed.
 -- =============================================================================
 
@@ -60,7 +60,7 @@ ALTER TABLE public.bookings
   );
 
 -- ---------------------------------------------------------------------------
--- Backfill from authoritative booking totals and gateway paid rows
+-- Backfill from authoritative booking totals
 -- ---------------------------------------------------------------------------
 UPDATE public.bookings AS b
 SET
@@ -70,36 +70,6 @@ SET
 WHERE b.payment_status = 'unpaid'::public.offline_payment_status
   AND coalesce(b.booking_amount, 0) > 0
   AND coalesce(b.booking_amount, 0) >= coalesce(b.total_amount, 0);
-
-DO $$
-BEGIN
-  IF to_regclass('public.payments') IS NOT NULL THEN
-    UPDATE public.bookings AS b
-    SET
-      payment_status = 'paid'::public.offline_payment_status,
-      payment_collected_at = coalesce(
-        b.payment_collected_at,
-        p.updated_at,
-        p.created_at,
-        b.updated_at
-      ),
-      payment_method = coalesce(b.payment_method, 'other'::public.payment_method),
-      payment_reference = coalesce(
-        nullif(trim(b.payment_reference), ''),
-        nullif(trim(p.provider_payment_id), ''),
-        nullif(trim(p.provider_order_id), '')
-      ),
-      booking_amount = GREATEST(
-        coalesce(b.booking_amount, 0),
-        coalesce(p.amount, 0)
-      )
-    FROM public.payments AS p
-    WHERE p.booking_id = b.id
-      AND p.status = 'paid'::public.booking_payment_status
-      AND b.payment_status = 'unpaid'::public.offline_payment_status;
-  END IF;
-END;
-$$;
 
 ALTER TABLE public.bookings
   DROP CONSTRAINT IF EXISTS bookings_payment_collection_integrity;
@@ -434,7 +404,7 @@ COMMENT ON FUNCTION public.list_vehicle_booking_conflicts(uuid, date, date, uuid
   'Returns schedule-blocking bookings overlapping a vehicle/date window. Does not auto-cancel unpaid bookings.';
 
 -- ---------------------------------------------------------------------------
--- Retire online-payment cron, RPCs, and table
+-- Retire online-payment cron and RPCs (no gateway table on this project)
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -455,18 +425,13 @@ EXCEPTION
 END;
 $$;
 
-DROP FUNCTION IF EXISTS public.create_booking_payment_attempt(uuid, numeric, text, text, text, jsonb);
-DROP FUNCTION IF EXISTS public.update_own_payment_attempt_outcome(uuid, public.booking_payment_status, text, text);
-DROP FUNCTION IF EXISTS public.attach_payment_provider_payment_id(text, text);
-DROP FUNCTION IF EXISTS public.complete_booking_payment(text, text, numeric, text, public.payment_method);
-DROP FUNCTION IF EXISTS public.mark_payment_attempt_failed_by_order(text, text, text);
-DROP FUNCTION IF EXISTS public.release_overdue_unpaid_bookings();
-
-DROP TRIGGER IF EXISTS payments_enforce_owner ON public.payments;
-DROP TRIGGER IF EXISTS payments_set_updated_at ON public.payments;
-DROP FUNCTION IF EXISTS public.enforce_payment_owner();
-
-DROP TABLE IF EXISTS public.payments;
+DROP FUNCTION IF EXISTS public.create_booking_payment_attempt CASCADE;
+DROP FUNCTION IF EXISTS public.attach_payment_provider_payment_id CASCADE;
+DROP FUNCTION IF EXISTS public.release_overdue_unpaid_bookings CASCADE;
+DROP FUNCTION IF EXISTS public.enforce_payment_owner CASCADE;
+DROP FUNCTION IF EXISTS public.update_own_payment_attempt_outcome CASCADE;
+DROP FUNCTION IF EXISTS public.complete_booking_payment CASCADE;
+DROP FUNCTION IF EXISTS public.mark_payment_attempt_failed_by_order CASCADE;
 
 DROP TYPE IF EXISTS public.payment_provider;
 DROP TYPE IF EXISTS public.booking_payment_status;

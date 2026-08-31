@@ -75,7 +75,13 @@ export function createInvoiceNumberService(
     }
 
     // Sequence RPCs are service_role-only so customers cannot burn invoice numbers.
-    return createSupabaseAdminClient();
+    try {
+      return createSupabaseAdminClient();
+    } catch (error) {
+      // Missing SUPABASE_SERVICE_ROLE_KEY is a plain Error — surface as invoice failure,
+      // not a generic database_failure after the conflict check already succeeded.
+      throw createInvoiceGenerationError(error);
+    }
   }
 
   function resolvePrefix(override?: string): string {

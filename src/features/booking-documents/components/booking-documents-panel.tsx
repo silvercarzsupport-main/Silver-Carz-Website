@@ -59,7 +59,7 @@ export function BookingDocumentsPanel({
 
   function onSubmit() {
     if (locked) {
-      router.push(customerBookingPath(booking.id));
+      router.replace(customerBookingPath(booking.id));
       return;
     }
 
@@ -76,8 +76,9 @@ export function BookingDocumentsPanel({
         return;
       }
 
-      router.push(customerBookingPath(booking.id));
-      router.refresh();
+      // replace only — refresh after push races soft navigation and can hang
+      // on “rendering” even though the submit already succeeded.
+      router.replace(customerBookingPath(booking.id));
     });
   }
 

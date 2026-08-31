@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { after } from 'next/server';
+
 import type { BookingNotificationEvent } from '@/lib/notifications/events';
 import {
   BOOKING_NOTIFICATION_EVENTS,
@@ -13,10 +15,13 @@ import type { Booking } from '@/types';
 
 /**
  * Best-effort — never throws. Failures are logged for ops visibility.
+ * Runs after the response so WhatsApp/email cannot hang the client UI.
  */
-function dispatch(promise: Promise<unknown>, label: string): void {
-  void promise.catch((error: unknown) => {
-    console.error(`[booking-notification] ${label} failed`, error);
+function dispatch(promiseFactory: () => Promise<unknown>, label: string): void {
+  after(() => {
+    void promiseFactory().catch((error: unknown) => {
+      console.error(`[booking-notification] ${label} failed`, error);
+    });
   });
 }
 
@@ -45,14 +50,14 @@ async function emit(input: {
 
 export function notifyBookingRequested(input: { readonly booking: Booking }): void {
   dispatch(
-    emit({ event: BOOKING_NOTIFICATION_EVENTS.bookingRequested, booking: input.booking }),
+    () => emit({ event: BOOKING_NOTIFICATION_EVENTS.bookingRequested, booking: input.booking }),
     'requested',
   );
 }
 
 export function notifyBookingDocumentsSubmitted(input: { readonly booking: Booking }): void {
   dispatch(
-    emit({ event: BOOKING_NOTIFICATION_EVENTS.documentsSubmitted, booking: input.booking }),
+    () => emit({ event: BOOKING_NOTIFICATION_EVENTS.documentsSubmitted, booking: input.booking }),
     'documents-submitted',
   );
 }
@@ -62,7 +67,7 @@ export function notifyBookingApproved(input: {
   readonly customerEmail?: string;
 }): void {
   dispatch(
-    emit({ event: BOOKING_NOTIFICATION_EVENTS.bookingApproved, booking: input.booking }),
+    () => emit({ event: BOOKING_NOTIFICATION_EVENTS.bookingApproved, booking: input.booking }),
     'approved',
   );
 }
@@ -73,11 +78,12 @@ export function notifyBookingRejected(input: {
   readonly reason: string;
 }): void {
   dispatch(
-    emit({
-      event: BOOKING_NOTIFICATION_EVENTS.bookingRejected,
-      booking: input.booking,
-      reason: input.reason,
-    }),
+    () =>
+      emit({
+        event: BOOKING_NOTIFICATION_EVENTS.bookingRejected,
+        booking: input.booking,
+        reason: input.reason,
+      }),
     'rejected',
   );
 }
@@ -87,18 +93,19 @@ export function notifyBookingPaymentCollected(input: {
   readonly amountPaid: number;
 }): void {
   dispatch(
-    emit({
-      event: BOOKING_NOTIFICATION_EVENTS.paymentCollected,
-      booking: input.booking,
-      amountPaid: input.amountPaid,
-    }),
+    () =>
+      emit({
+        event: BOOKING_NOTIFICATION_EVENTS.paymentCollected,
+        booking: input.booking,
+        amountPaid: input.amountPaid,
+      }),
     'payment-collected',
   );
 }
 
 export function notifyBookingCancelled(input: { readonly booking: Booking }): void {
   dispatch(
-    emit({ event: BOOKING_NOTIFICATION_EVENTS.bookingCancelled, booking: input.booking }),
+    () => emit({ event: BOOKING_NOTIFICATION_EVENTS.bookingCancelled, booking: input.booking }),
     'cancelled',
   );
 }
@@ -110,12 +117,13 @@ export function notifyBookingUpdated(input: {
 }): void {
   const suffix = `${input.previous.delivery_date}:${input.previous.return_date}:${input.previous.vehicle_id}`;
   dispatch(
-    emit({
-      event: BOOKING_NOTIFICATION_EVENTS.bookingUpdated,
-      booking: input.booking,
-      suffix,
-      updateSummary: input.updateSummary,
-    }),
+    () =>
+      emit({
+        event: BOOKING_NOTIFICATION_EVENTS.bookingUpdated,
+        booking: input.booking,
+        suffix,
+        updateSummary: input.updateSummary,
+      }),
     'updated',
   );
 }
