@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { CustomerFooter } from '@/components/customer/footer/customer-footer';
 import { CustomerHeader } from '@/components/customer/header/customer-header';
+import { PasswordRecoveryRedirectCatcher } from '@/components/customer/layout/password-recovery-redirect-catcher';
 import { PortalThemeScope } from '@/components/shared/portal-theme-scope';
 import { getAuthState } from '@/lib/auth';
 
@@ -17,6 +18,7 @@ export async function CustomerShell({ children }: { children: ReactNode }) {
   return (
     <div data-portal="customer" className="flex min-h-svh flex-col bg-background text-foreground">
       <PortalThemeScope portal="customer" />
+      <PasswordRecoveryRedirectCatcher />
       <CustomerHeader user={activeUser} />
       <main className="flex flex-1 flex-col">{children}</main>
       <CustomerFooter />

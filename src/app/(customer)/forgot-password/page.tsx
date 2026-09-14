@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 
 import { appConfig } from '@/config';
 import { CustomerAuthPanel } from '@/features/customer-auth/components/customer-auth-panel';
 import { CustomerForgotPasswordForm } from '@/features/customer-auth/components/customer-forgot-password-form';
-import { getAuthState, resolveCustomerPostLoginPath } from '@/lib/auth';
 import { AUTH_ERROR_CODES, getAuthErrorMessageForCode } from '@/lib/auth/errors';
 import { isSafeCustomerRedirectPath } from '@/lib/auth/route-guards';
 
@@ -44,18 +42,13 @@ function resolveInitialError(reason: string | undefined): string | undefined {
   return undefined;
 }
 
-/** Customer forgot-password — email a recovery link. */
+/** Customer forgot-password — email a recovery link. Stay reachable while signed in. */
 export default async function CustomerForgotPasswordPage({
   searchParams,
 }: ForgotPasswordPageProps) {
   const params = await searchParams;
   const resumePath = resolveResumePathParam(firstParam(params.next));
   const reason = firstParam(params.reason);
-
-  const { user, profile } = await getAuthState();
-  if (user && profile?.isActive) {
-    redirect(resolveCustomerPostLoginPath(resumePath));
-  }
 
   return (
     <CustomerAuthPanel

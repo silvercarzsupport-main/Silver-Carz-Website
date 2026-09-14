@@ -7,13 +7,15 @@
  * the email is invalid — never reveal whether an account exists.
  */
 
+import { headers } from 'next/headers';
+
 import { resetPasswordRequestSchema } from '@/features/customer-auth/validations/credentials';
 import { AUTH_ERROR_CODES, toAuthError } from '@/lib/auth/errors';
 import {
   buildPasswordResetRedirectTo,
   isAuthNetworkError,
   isVisiblePasswordResetRequestError,
-  resolvePublicAppOrigin,
+  resolveRequestAppOrigin,
 } from '@/lib/auth/password-reset';
 import { AppError, ERROR_CODES } from '@/lib/errors';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
@@ -35,8 +37,10 @@ export async function requestPasswordResetAction(
 
   try {
     const supabase = await createSupabaseServerClient();
+    const headerList = await headers();
+    const origin = resolveRequestAppOrigin(headerList);
     const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-      redirectTo: buildPasswordResetRedirectTo(resolvePublicAppOrigin(), resumePath),
+      redirectTo: buildPasswordResetRedirectTo(origin, resumePath),
     });
 
     if (error) {

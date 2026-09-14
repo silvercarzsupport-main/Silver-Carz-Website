@@ -24,17 +24,17 @@ const ADMIN_AUTH_ROUTES: readonly AppRoute[] = [
   ROUTES.resetPassword,
 ] as const;
 
-/** Customer auth screens (reachable without a session). */
+/** Customer auth screens that bounce signed-in users away (login / signup). */
 const CUSTOMER_AUTH_ROUTES: readonly AppRoute[] = [
   ROUTES.customerLogin,
   ROUTES.customerSignup,
-  ROUTES.customerForgotPassword,
 ] as const;
 
 /** Auth-facing routes that must stay reachable without a session. */
 const PUBLIC_AUTH_ROUTES: readonly AppRoute[] = [
   ...ADMIN_AUTH_ROUTES,
   ...CUSTOMER_AUTH_ROUTES,
+  ROUTES.customerForgotPassword,
 ] as const;
 
 /** Prefix for Auth callback / confirmation handlers (e.g. `/auth/callback`). */

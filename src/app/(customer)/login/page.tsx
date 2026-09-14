@@ -6,7 +6,10 @@ import { CustomerAuthPanel } from '@/features/customer-auth/components/customer-
 import { CustomerLoginForm } from '@/features/customer-auth/components/customer-login-form';
 import { getAuthState, resolveCustomerPostLoginPath } from '@/lib/auth';
 import { AUTH_ERROR_CODES, getAuthErrorMessageForCode } from '@/lib/auth/errors';
-import { PASSWORD_RESET_UPDATED_MESSAGE } from '@/lib/auth/password-reset';
+import {
+  hasPasswordRecoveryQuery,
+  PASSWORD_RESET_UPDATED_MESSAGE,
+} from '@/lib/auth/password-reset';
 
 export const metadata: Metadata = {
   title: `Login | ${appConfig.companyName}`,
@@ -18,6 +21,9 @@ interface CustomerLoginPageProps {
     next?: string | string[];
     reason?: string | string[];
     reset?: string | string[];
+    code?: string | string[];
+    token_hash?: string | string[];
+    type?: string | string[];
   }>;
 }
 
@@ -53,7 +59,7 @@ export default async function CustomerLoginPage({ searchParams }: CustomerLoginP
   const reset = firstParam(params.reset);
 
   const { user, profile } = await getAuthState();
-  if (user && profile?.isActive) {
+  if (user && profile?.isActive && !hasPasswordRecoveryQuery(params)) {
     redirect(resolveCustomerPostLoginPath(nextPath));
   }
 

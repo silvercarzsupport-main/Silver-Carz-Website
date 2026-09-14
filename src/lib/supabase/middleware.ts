@@ -11,6 +11,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { ROUTES } from '@/constants/routes';
+import { buildPasswordRecoveryProxyHref } from '@/lib/auth/password-reset';
+import { APP_ROLES, isStaffRole } from '@/lib/auth/roles';
 import {
   buildCustomerLoginRedirectPath,
   buildLoginRedirectPath,
@@ -21,9 +24,6 @@ import {
   resolveCustomerPostLoginPath,
   resolvePostLoginPath,
 } from '@/lib/auth/route-guards';
-import { APP_ROLES } from '@/lib/auth/roles';
-import { isStaffRole } from '@/lib/auth/roles';
-import { ROUTES } from '@/constants/routes';
 import { supabaseConfig } from '@/lib/supabase/config';
 import type { Database } from '@/types/database';
 
@@ -115,6 +115,11 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const sessionResponse = getResponse();
   const { pathname, search } = request.nextUrl;
   const nextPath = `${pathname}${search}`;
+
+  const recoveryHref = buildPasswordRecoveryProxyHref(pathname, request.nextUrl.searchParams);
+  if (recoveryHref) {
+    return redirectWithSession(request, sessionResponse, recoveryHref);
+  }
 
   if (!user && isProtectedRoute(pathname)) {
     return redirectWithSession(request, sessionResponse, buildLoginRedirectPath(nextPath));

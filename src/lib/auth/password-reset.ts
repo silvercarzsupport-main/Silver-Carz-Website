@@ -15,6 +15,51 @@ export const PASSWORD_RESET_UPDATED_MESSAGE =
   'Your password has been updated. Sign in with your new password.';
 
 const LOCAL_DEV_ORIGIN = 'http://localhost:3000';
+const LOCAL_LOOPBACK_ORIGIN = 'http://127.0.0.1:3000';
+
+function parseHttpOrigin(value: string | undefined, allowBareHost = false): string | null {
+  const trimmed = value?.trim().replace(/\/$/, '') ?? '';
+  if (!trimmed) {
+    return null;
+  }
+
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : allowBareHost
+      ? `https://${trimmed}`
+      : '';
+
+  if (!withProtocol) {
+    return null;
+  }
+
+  try {
+    const url = new URL(withProtocol);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.origin;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function firstSearchValue(
+  params: URLSearchParams | Record<string, string | string[] | undefined>,
+  key: string,
+): string | null {
+  if (typeof (params as URLSearchParams).get === 'function') {
+    return (params as URLSearchParams).get(key);
+  }
+
+  const value = (params as Record<string, string | string[] | undefined>)[key];
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value ?? null;
+}
 
 export type RecoveryHashTokens = {
   readonly accessToken: string;
@@ -33,23 +78,80 @@ export function getPasswordRecoveryCookieOptions(secure: boolean) {
 
 /**
  * Public site origin used in reset emails (`redirectTo`).
- * Never derived from the Host header — that would allow open redirects.
+ * Prefers NEXT_PUBLIC_APP_URL, then Vercel URLs, then localhost.
  */
 export function resolvePublicAppOrigin(
   envUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL,
+  vercelProductionUrl: string | undefined = process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  vercelUrl: string | undefined = process.env.VERCEL_URL,
 ): string {
-  const trimmed = envUrl?.trim().replace(/\/$/, '') ?? '';
+  return (
+    parseHttpOrigin(envUrl) ??
+    parseHttpOrigin(vercelProductionUrl, true) ??
+    parseHttpOrigin(vercelUrl, true) ??
+    LOCAL_DEV_ORIGIN
+  );
+}
 
-  try {
-    const url = new URL(trimmed);
-    if (url.protocol === 'http:' || url.protocol === 'https:') {
-      return url.origin;
-    }
-  } catch {
-    // fall through
+export function isAllowedAppOrigin(
+  origin: string,
+  envUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL,
+  vercelProductionUrl: string | undefined = process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  vercelUrl: string | undefined = process.env.VERCEL_URL,
+): boolean {
+  const configured = resolvePublicAppOrigin(envUrl, vercelProductionUrl, vercelUrl);
+  const allowed = new Set(
+    [
+      configured,
+      LOCAL_DEV_ORIGIN,
+      LOCAL_LOOPBACK_ORIGIN,
+      parseHttpOrigin(vercelProductionUrl, true),
+      parseHttpOrigin(vercelUrl, true),
+    ].filter((value): value is string => Boolean(value)),
+  );
+
+  return allowed.has(origin);
+}
+
+type HeaderReader = {
+  get(name: string): string | null;
+};
+
+/**
+ * Origin for this request, if it matches a known app host.
+ * Stops Host-header open redirects while still using localhost vs production correctly.
+ */
+export function resolveRequestAppOrigin(
+  headerList: HeaderReader,
+  envUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL,
+  vercelProductionUrl: string | undefined = process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  vercelUrl: string | undefined = process.env.VERCEL_URL,
+): string {
+  const configured = resolvePublicAppOrigin(envUrl, vercelProductionUrl, vercelUrl);
+  const host =
+    (headerList.get('x-forwarded-host') ?? headerList.get('host') ?? '').split(',')[0]?.trim() ??
+    '';
+  const forwardedProto = (headerList.get('x-forwarded-proto') ?? '')
+    .split(',')[0]
+    ?.trim()
+    .toLowerCase();
+  const proto =
+    forwardedProto === 'http' || forwardedProto === 'https'
+      ? forwardedProto
+      : host.startsWith('localhost') || host.startsWith('127.0.0.1')
+        ? 'http'
+        : 'https';
+
+  if (!host) {
+    return configured;
   }
 
-  return LOCAL_DEV_ORIGIN;
+  const origin = parseHttpOrigin(`${proto}://${host}`);
+  if (origin && isAllowedAppOrigin(origin, envUrl, vercelProductionUrl, vercelUrl)) {
+    return origin;
+  }
+
+  return configured;
 }
 
 /** Safe post-reset login destination (customer portal only). */
@@ -63,18 +165,114 @@ export function resolveResumePath(resumePath: string | null | undefined): string
 
 /**
  * `redirectTo` baked into the Supabase recovery email.
- * Lands on `/auth/callback` so PKCE `code` and `token_hash` can be exchanged.
+ * Must match a Redirect URL path with no extra query string — otherwise
+ * Auth falls back to Site URL (the homepage).
  */
 export function buildPasswordResetRedirectTo(origin: string, resumePath?: string | null): string {
-  const url = new URL(ROUTES.authCallback, `${origin}/`);
-  url.searchParams.set('next', ROUTES.customerResetPassword);
-
+  const url = new URL(ROUTES.customerResetPassword, `${origin}/`);
   const resume = resolveResumePath(resumePath);
   if (resume) {
     url.searchParams.set('resume', resume);
   }
 
   return url.toString();
+}
+
+export function shouldMarkPasswordRecovery(input: {
+  readonly type: string | null;
+  readonly next: string | null;
+  readonly destination: string;
+}): boolean {
+  const pathname = input.destination.split('?')[0] ?? input.destination;
+  return (
+    input.type === 'recovery' ||
+    input.next === ROUTES.customerResetPassword ||
+    pathname === ROUTES.customerResetPassword
+  );
+}
+
+/** True when query params still carry a recovery `code`, OTP, or `type=recovery`. */
+export function hasPasswordRecoveryQuery(
+  params: URLSearchParams | Record<string, string | string[] | undefined>,
+): boolean {
+  return (
+    Boolean(firstSearchValue(params, 'code')) ||
+    Boolean(firstSearchValue(params, 'token_hash')) ||
+    firstSearchValue(params, 'type') === 'recovery'
+  );
+}
+
+/** True when the current URL still carries a recovery `code`, OTP, or hash. */
+export function hasPasswordRecoveryParams(search: string, hash: string): boolean {
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  if (hasPasswordRecoveryQuery(params)) {
+    return true;
+  }
+
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+  if (!raw) {
+    return false;
+  }
+
+  const hashParams = new URLSearchParams(raw);
+  return hashParams.get('type') === 'recovery' || readRecoveryHash(hash) !== null;
+}
+
+const RECOVERY_HANDLED_PATHS = new Set<string>([ROUTES.authCallback, ROUTES.customerResetPassword]);
+
+/**
+ * Server/proxy redirect when Auth dropped a recovery `code` on Site URL (home).
+ * Hash tokens are not visible here — the client catcher handles those.
+ */
+export function buildPasswordRecoveryProxyHref(
+  pathname: string,
+  searchParams: URLSearchParams,
+): string | null {
+  if (RECOVERY_HANDLED_PATHS.has(pathname) || !hasPasswordRecoveryQuery(searchParams)) {
+    return null;
+  }
+
+  const params = new URLSearchParams(
+    typeof searchParams.toString === 'function' ? searchParams.toString() : '',
+  );
+  if (params.get('code') || params.get('token_hash')) {
+    if (!params.get('next')) {
+      params.set('next', ROUTES.customerResetPassword);
+    }
+
+    return `${ROUTES.authCallback}?${params.toString()}`;
+  }
+
+  const query = params.toString();
+  return query ? `${ROUTES.customerResetPassword}?${query}` : ROUTES.customerResetPassword;
+}
+
+/**
+ * If Auth fell back to Site URL (usually `/`), send leftover recovery tokens
+ * to `/auth/callback` or `/reset-password` instead of leaving the user on home.
+ */
+export function buildPasswordRecoveryCatcherHref(
+  pathname: string,
+  search: string,
+  hash: string,
+): string | null {
+  if (RECOVERY_HANDLED_PATHS.has(pathname)) {
+    return null;
+  }
+
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  const fromQuery = buildPasswordRecoveryProxyHref(pathname, params);
+  if (fromQuery) {
+    return fromQuery;
+  }
+
+  if (!hasPasswordRecoveryParams(search, hash)) {
+    return null;
+  }
+
+  const query = !search || search.startsWith('?') ? search : `?${search}`;
+  const fragment = !hash || hash.startsWith('#') ? hash : `#${hash}`;
+  return `${ROUTES.customerResetPassword}${query}${fragment}`;
 }
 
 function withResume(pathname: string, resume: string | undefined): string {

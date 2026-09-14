@@ -6,6 +6,7 @@ import { setPasswordRecoveryCookie } from '@/lib/auth/password-reset-cookie';
 import {
   getPasswordRecoveryCookieOptions,
   resolveAuthCallbackDestination,
+  shouldMarkPasswordRecovery,
 } from '@/lib/auth/password-reset';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -14,10 +15,6 @@ export const dynamic = 'force-dynamic';
 function firstParam(value: string | null): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
-}
-
-function isRecoveryExchange(type: string | null, next: string | null): boolean {
-  return type === 'recovery' || next === ROUTES.customerResetPassword;
 }
 
 function attachRecoveryCookie(response: NextResponse): NextResponse {
@@ -76,7 +73,7 @@ export async function GET(request: NextRequest) {
 
   const response = NextResponse.redirect(redirectUrl);
 
-  if (isRecoveryExchange(type, next)) {
+  if (shouldMarkPasswordRecovery({ type, next, destination })) {
     await setPasswordRecoveryCookie();
     attachRecoveryCookie(response);
   }

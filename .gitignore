@@ -13,8 +13,8 @@
 # testing
 /coverage
 
-# next.js
-/.next/
+# next.js — no trailing slash so a `.next` symlink is ignored too
+.next
 /out/
 
 # production

@@ -5,6 +5,7 @@ import { appConfig } from '@/config';
 import { CustomerAuthPanel } from '@/features/customer-auth/components/customer-auth-panel';
 import { CustomerSignupForm } from '@/features/customer-auth/components/customer-signup-form';
 import { getAuthState, resolveCustomerPostLoginPath } from '@/lib/auth';
+import { hasPasswordRecoveryQuery } from '@/lib/auth/password-reset';
 
 export const metadata: Metadata = {
   title: `Sign Up | ${appConfig.companyName}`,
@@ -14,6 +15,9 @@ export const metadata: Metadata = {
 interface CustomerSignupPageProps {
   searchParams: Promise<{
     next?: string | string[];
+    code?: string | string[];
+    token_hash?: string | string[];
+    type?: string | string[];
   }>;
 }
 
@@ -30,7 +34,7 @@ export default async function CustomerSignupPage({ searchParams }: CustomerSignu
   const nextPath = firstParam(params.next);
 
   const { user, profile } = await getAuthState();
-  if (user && profile?.isActive) {
+  if (user && profile?.isActive && !hasPasswordRecoveryQuery(params)) {
     redirect(resolveCustomerPostLoginPath(nextPath));
   }
 
