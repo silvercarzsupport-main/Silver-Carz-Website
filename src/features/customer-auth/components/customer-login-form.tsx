@@ -21,13 +21,20 @@ import { cn } from '@/lib/utils';
 interface CustomerLoginFormProps {
   readonly nextPath?: string;
   readonly initialError?: string;
+  readonly initialSuccess?: string;
   readonly className?: string;
 }
 
-export function CustomerLoginForm({ nextPath, initialError, className }: CustomerLoginFormProps) {
+export function CustomerLoginForm({
+  nextPath,
+  initialError,
+  initialSuccess,
+  className,
+}: CustomerLoginFormProps) {
   const emailId = useId();
   const passwordId = useId();
   const errorId = useId();
+  const successId = useId();
 
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(initialError ?? null);
@@ -52,6 +59,10 @@ export function CustomerLoginForm({ nextPath, initialError, className }: Custome
     ? `${ROUTES.customerSignup}?${new URLSearchParams({ next: nextPath }).toString()}`
     : ROUTES.customerSignup;
 
+  const forgotHref = nextPath
+    ? `${ROUTES.customerForgotPassword}?${new URLSearchParams({ next: nextPath }).toString()}`
+    : ROUTES.customerForgotPassword;
+
   const onSubmit = handleSubmit((values) => {
     setFormError(null);
 
@@ -69,12 +80,19 @@ export function CustomerLoginForm({ nextPath, initialError, className }: Custome
       onSubmit={onSubmit}
       noValidate
       className={cn('grid gap-4', className)}
-      aria-describedby={formError ? errorId : undefined}
+      aria-describedby={formError ? errorId : initialSuccess ? successId : undefined}
     >
       {formError ? (
         <Alert variant="destructive" id={errorId}>
           <AlertTitle>Sign in failed</AlertTitle>
           <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {!formError && initialSuccess ? (
+        <Alert variant="success" id={successId}>
+          <AlertTitle>Password updated</AlertTitle>
+          <AlertDescription>{initialSuccess}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -84,7 +102,6 @@ export function CustomerLoginForm({ nextPath, initialError, className }: Custome
           id={emailId}
           type="email"
           autoComplete="email"
-          autoFocus
           placeholder="you@example.com"
           aria-invalid={errors.email ? true : undefined}
           aria-describedby={errors.email ? `${emailId}-error` : undefined}
@@ -100,7 +117,15 @@ export function CustomerLoginForm({ nextPath, initialError, className }: Custome
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor={passwordId}>Password</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor={passwordId}>Password</Label>
+          <Link
+            href={forgotHref}
+            className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
         <div className="relative">
           <Input
             id={passwordId}

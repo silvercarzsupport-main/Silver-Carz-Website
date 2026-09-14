@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { CustomerNavLink } from '@/components/customer/navigation/customer-nav-link';
 import { BrandLogo } from '@/components/shared/brand-logo';
+import { CustomerContactLinks } from '@/components/customer/shared/customer-contact-links';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { appConfig, customerMainNavItems } from '@/config';
@@ -120,6 +121,11 @@ export function CustomerMobileNav({ user }: { user: AuthUser | null }) {
                 </Link>
               </Button>
             )}
+          </div>
+
+          <div className="mt-4 border-t border-white/10 pt-4">
+            <p className="mb-3 text-xs font-bold tracking-wide text-primary uppercase">Contact</p>
+            <CustomerContactLinks tone="dark" />
           </div>
         </nav>
       </SheetContent>

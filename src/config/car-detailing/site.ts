@@ -1,10 +1,16 @@
+import { contactConfig } from '@/config/contact';
+
 /** Car detailing studio — business info for the public detailing page. */
 export const carDetailingSite = {
   name: 'Silver Carz',
   legalName: 'Silver Carz Premium Car Detailing',
-  phone: '+91 90284 68412',
-  phoneHref: 'tel:+919028468412',
-  whatsappNumber: '917276038998',
+  phone: contactConfig.phoneDisplay,
+  phoneHref: contactConfig.phoneHref,
+  email: contactConfig.email,
+  emailHref: contactConfig.emailHref,
+  instagramUrl: contactConfig.instagramUrl,
+  instagramHandle: contactConfig.instagramHandle,
+  whatsappNumber: contactConfig.whatsappNumber,
   address: {
     street: 'Mangalmurti Square, Rajendra Nagar, Takli Seem',
     city: 'Nagpur',
@@ -33,8 +39,7 @@ export const carDetailingSite = {
   ],
 } as const;
 
-export const carDetailingWhatsappLink = (text: string) =>
-  `https://wa.me/${carDetailingSite.whatsappNumber}?text=${encodeURIComponent(text)}`;
+export { contactWhatsappLink as carDetailingWhatsappLink } from '@/config/contact';
 
 const fullAddress = `Silver Carz, ${carDetailingSite.address.street}, ${carDetailingSite.address.city}, ${carDetailingSite.address.state} ${carDetailingSite.address.postalCode}`;
 

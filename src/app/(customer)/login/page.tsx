@@ -6,6 +6,7 @@ import { CustomerAuthPanel } from '@/features/customer-auth/components/customer-
 import { CustomerLoginForm } from '@/features/customer-auth/components/customer-login-form';
 import { getAuthState, resolveCustomerPostLoginPath } from '@/lib/auth';
 import { AUTH_ERROR_CODES, getAuthErrorMessageForCode } from '@/lib/auth/errors';
+import { PASSWORD_RESET_UPDATED_MESSAGE } from '@/lib/auth/password-reset';
 
 export const metadata: Metadata = {
   title: `Login | ${appConfig.companyName}`,
@@ -16,6 +17,7 @@ interface CustomerLoginPageProps {
   searchParams: Promise<{
     next?: string | string[];
     reason?: string | string[];
+    reset?: string | string[];
   }>;
 }
 
@@ -48,6 +50,7 @@ export default async function CustomerLoginPage({ searchParams }: CustomerLoginP
   const params = await searchParams;
   const nextPath = firstParam(params.next);
   const reason = firstParam(params.reason);
+  const reset = firstParam(params.reset);
 
   const { user, profile } = await getAuthState();
   if (user && profile?.isActive) {
@@ -59,7 +62,11 @@ export default async function CustomerLoginPage({ searchParams }: CustomerLoginP
       title="Welcome back"
       description="Log in to continue your booking. Your selected car stays with you."
     >
-      <CustomerLoginForm nextPath={nextPath} initialError={resolveInitialError(reason)} />
+      <CustomerLoginForm
+        nextPath={nextPath}
+        initialError={resolveInitialError(reason)}
+        initialSuccess={reset === 'success' ? PASSWORD_RESET_UPDATED_MESSAGE : undefined}
+      />
     </CustomerAuthPanel>
   );
 }

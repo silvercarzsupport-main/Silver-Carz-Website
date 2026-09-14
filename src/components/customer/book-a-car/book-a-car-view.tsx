@@ -7,6 +7,7 @@ import { BookingProgressSteps } from '@/components/customer/book-a-car/booking-p
 import { BookingSummaryPanel } from '@/components/customer/book-a-car/booking-summary-panel';
 import { FranchiseEnquiryBanner } from '@/components/customer/book-a-car/franchise-enquiry-banner';
 import { VehicleBrowseCard } from '@/components/customer/book-a-car/vehicle-browse-card';
+import { VendorContactForm } from '@/components/customer/book-a-car/vendor-contact-form';
 import { WhyBookBar } from '@/components/customer/book-a-car/why-book-bar';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -155,6 +156,7 @@ export function BookACarView({
       </CustomerContainer>
 
       <WhyBookBar />
+      <VendorContactForm />
     </>
   );
 }

@@ -4,6 +4,7 @@ import { BrandLogo } from '@/components/shared/brand-logo';
 import { CustomerMobileNav } from '@/components/customer/navigation/customer-mobile-nav';
 import { CustomerNavLink } from '@/components/customer/navigation/customer-nav-link';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
+import { CustomerContactLinks } from '@/components/customer/shared/customer-contact-links';
 import { Button } from '@/components/ui/button';
 import { appConfig, customerMainNavItems } from '@/config';
 import { ROUTES } from '@/constants/routes';
@@ -41,7 +42,8 @@ export function CustomerHeader({ user }: { user: AuthUser | null }) {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <CustomerContactLinks layout="icons" tone="dark" className="hidden sm:flex" />
           {user ? (
             <CustomerAccountMenu user={user} />
           ) : (

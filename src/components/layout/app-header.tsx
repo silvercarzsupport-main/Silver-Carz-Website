@@ -1,6 +1,7 @@
-import { Bell, Home } from 'lucide-react';
+import { Home } from 'lucide-react';
 import Link from 'next/link';
 
+import { CustomerContactLinks } from '@/components/customer/shared/customer-contact-links';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import {
   Breadcrumb,
@@ -13,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { appConfig } from '@/config';
 import { ROUTES } from '@/constants';
+import { AdminNotificationBell } from '@/features/admin-notifications';
 import { UserMenu } from '@/features/auth/components/user-menu';
 import type { AuthUser } from '@/lib/auth/types';
 
@@ -41,11 +43,11 @@ export function AppHeader({ user }: { user: AuthUser }) {
           </Link>
         </Button>
 
+        <CustomerContactLinks layout="icons" className="hidden sm:flex" />
+
         <ThemeToggle />
 
-        <Button variant="ghost" size="icon" aria-label="Notifications">
-          <Bell className="size-4" />
-        </Button>
+        <AdminNotificationBell />
 
         <UserMenu user={user} />
       </div>

@@ -408,6 +408,74 @@ export type Database = {
           },
         ];
       };
+      admin_notifications: {
+        Row: {
+          id: string;
+          idempotency_key: string;
+          event_type: string;
+          booking_id: string | null;
+          payload: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          idempotency_key: string;
+          event_type: string;
+          booking_id?: string | null;
+          payload?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          idempotency_key?: string;
+          event_type?: string;
+          booking_id?: string | null;
+          payload?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'admin_notifications_booking_id_fkey';
+            columns: ['booking_id'];
+            isOneToOne: false;
+            referencedRelation: 'bookings';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      admin_notification_reads: {
+        Row: {
+          notification_id: string;
+          profile_id: string;
+          read_at: string;
+        };
+        Insert: {
+          notification_id: string;
+          profile_id: string;
+          read_at?: string;
+        };
+        Update: {
+          notification_id?: string;
+          profile_id?: string;
+          read_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'admin_notification_reads_notification_id_fkey';
+            columns: ['notification_id'];
+            isOneToOne: false;
+            referencedRelation: 'admin_notifications';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'admin_notification_reads_profile_id_fkey';
+            columns: ['profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -481,6 +549,23 @@ export type Database = {
           p_payload: Json;
         };
         Returns: undefined;
+      };
+      insert_admin_notification: {
+        Args: {
+          p_idempotency_key: string;
+          p_event_type: string;
+          p_booking_id: string;
+          p_payload: Json;
+        };
+        Returns: undefined;
+      };
+      mark_all_admin_notifications_read: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      count_unread_admin_notifications: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
       };
       next_invoice_sequence: {
         Args: {

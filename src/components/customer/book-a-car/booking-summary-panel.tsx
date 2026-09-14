@@ -1,6 +1,7 @@
-import { CheckCircle2, Phone } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
+import { CustomerContactLinks } from '@/components/customer/shared/customer-contact-links';
 import { Button } from '@/components/ui/button';
 import { customerBookingContinuePath } from '@/constants/routes';
 import { calculateRentalDays } from '@/features/customer-booking/lib/estimate';
@@ -162,14 +163,9 @@ export function BookingSummaryPanel({
           ))}
         </ul>
 
-        <div className="flex items-start gap-2 rounded-md bg-tone-gold/80 px-3 py-3 text-tone-gold-foreground">
-          <Phone className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <div>
-            <p className="text-xs font-bold uppercase">Need Help?</p>
-            <p className="mt-0.5 text-xs opacity-80">
-              Support contact details will be published when available.
-            </p>
-          </div>
+        <div className="rounded-md bg-tone-gold/80 px-3 py-3 text-tone-gold-foreground">
+          <p className="text-xs font-bold uppercase">Need Help?</p>
+          <CustomerContactLinks className="mt-2 [&_a]:text-tone-gold-foreground [&_a]:hover:text-tone-gold-foreground/80" />
         </div>
       </div>
     </aside>

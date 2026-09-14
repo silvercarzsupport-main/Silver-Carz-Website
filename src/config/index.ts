@@ -1,4 +1,5 @@
 export { appConfig, type AppConfig } from './app';
+export { contactConfig, contactWhatsappLink, type ContactConfig } from './contact';
 export {
   DEFAULT_FLEET_CITY,
   citiesMatch,

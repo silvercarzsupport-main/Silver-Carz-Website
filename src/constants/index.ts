@@ -10,6 +10,7 @@ export {
 } from './routes';
 export {
   BOOKING_CITY_COOKIE_MAX_AGE,
+  PASSWORD_RECOVERY_COOKIE_MAX_AGE,
   SIDEBAR_COOKIE_MAX_AGE,
   STORAGE_KEYS,
   type StorageKey,

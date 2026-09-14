@@ -28,6 +28,7 @@ const ADMIN_AUTH_ROUTES: readonly AppRoute[] = [
 const CUSTOMER_AUTH_ROUTES: readonly AppRoute[] = [
   ROUTES.customerLogin,
   ROUTES.customerSignup,
+  ROUTES.customerForgotPassword,
 ] as const;
 
 /** Auth-facing routes that must stay reachable without a session. */
@@ -235,6 +236,8 @@ export function isSafeCustomerRedirectPath(nextPath: string): boolean {
     ROUTES.aboutUs,
     ROUTES.customerLogin,
     ROUTES.customerSignup,
+    ROUTES.customerForgotPassword,
+    ROUTES.customerResetPassword,
     ROUTES.myBookings,
     ROUTES.profile,
     ROUTES.bookingContinue,

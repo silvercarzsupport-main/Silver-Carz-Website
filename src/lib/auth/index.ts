@@ -93,6 +93,23 @@ export {
   toAuthUser,
 } from './session';
 
+export {
+  buildPasswordResetRedirectTo,
+  buildPasswordUpdatedLoginPath,
+  PASSWORD_RESET_REQUEST_SUCCESS_MESSAGE,
+  PASSWORD_RESET_UPDATED_MESSAGE,
+  readRecoveryHash,
+  resolveAuthCallbackDestination,
+  resolvePublicAppOrigin,
+  resolveResumePath,
+} from './password-reset';
+
+export {
+  clearPasswordRecoveryCookie,
+  hasPasswordRecoveryCookie,
+  setPasswordRecoveryCookie,
+} from './password-reset-cookie';
+
 export { signOut } from './sign-out';
 
 export type { AuthState, AuthUser, UserProfile } from './types';

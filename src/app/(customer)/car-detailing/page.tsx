@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { CarDetailingPageContent } from '@/components/customer/car-detailing/car-detailing-page-content';
-import { appConfig } from '@/config';
+import { appConfig, contactConfig } from '@/config';
 import {
   carDetailingFaqs,
   carDetailingMapsLink,
@@ -10,8 +10,7 @@ import {
 } from '@/config/car-detailing';
 
 const title = 'Car Detailing | Premium Car Wash in Nagpur';
-const description =
-  "Nagpur's premium car detailing studio — car wash from ₹200, interior deep cleaning, ceramic coating, PPF-safe wash, denting & painting. Rajendra Nagar, Takli Seem. Book on WhatsApp or call +91 90284 68412.";
+const description = `Nagpur's premium car detailing studio — car wash from ₹200, interior deep cleaning, ceramic coating, PPF-safe wash, denting & painting. Rajendra Nagar, Takli Seem. Book on WhatsApp or call ${contactConfig.phoneDisplay}.`;
 
 export const metadata: Metadata = {
   title: `${title} | ${appConfig.companyName}`,
@@ -51,7 +50,9 @@ const localBusinessJsonLd = {
   '@type': ['AutoWash', 'AutoRepair'],
   name: carDetailingSite.name,
   description,
-  telephone: carDetailingSite.phone,
+  telephone: contactConfig.phoneE164,
+  email: contactConfig.email,
+  sameAs: [contactConfig.instagramUrl],
   priceRange: '₹200 - ₹18,000',
   currenciesAccepted: 'INR',
   address: {

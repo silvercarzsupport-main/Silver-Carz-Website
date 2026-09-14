@@ -132,8 +132,25 @@ export function DetailingContact() {
             className="underline underline-offset-4 transition-colors hover:text-primary"
           >
             Call {carDetailingSite.phone}
-          </a>{' '}
-          · {carDetailingSite.hours.label}
+          </a>
+          {' · '}
+          <a
+            href={carDetailingSite.emailHref}
+            className="underline underline-offset-4 transition-colors hover:text-primary"
+          >
+            {carDetailingSite.email}
+          </a>
+          {' · '}
+          <a
+            href={carDetailingSite.instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4 transition-colors hover:text-primary"
+          >
+            {carDetailingSite.instagramHandle}
+          </a>
+          {' · '}
+          {carDetailingSite.hours.label}
         </p>
       </motion.form>
     </DetailingSectionWrapper>

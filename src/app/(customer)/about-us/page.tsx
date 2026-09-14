@@ -21,6 +21,7 @@ import {
 import { WhyBookBar } from '@/components/customer/book-a-car/why-book-bar';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
 import { BrandLogo } from '@/components/shared/brand-logo';
+import { CustomerContactLinks } from '@/components/customer/shared/customer-contact-links';
 import { appConfig } from '@/config';
 import { ROUTES } from '@/constants/routes';
 
@@ -231,6 +232,7 @@ export default function AboutUsPage() {
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Read the full hire terms before you book — they apply to every rental.
             </p>
+            <CustomerContactLinks className="mt-4" />
             <Link
               href="#terms"
               className="mt-4 inline-flex h-10 items-center rounded-md border border-border px-4 text-xs font-bold tracking-wide text-foreground uppercase transition-colors hover:border-primary hover:text-primary"

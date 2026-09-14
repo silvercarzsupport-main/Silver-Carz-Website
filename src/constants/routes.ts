@@ -22,6 +22,8 @@ export const ROUTES = {
   // --- Customer account / workflow (not primary nav) ---
   customerLogin: '/login',
   customerSignup: '/signup',
+  customerForgotPassword: '/forgot-password',
+  customerResetPassword: '/reset-password',
   myBookings: '/my-bookings',
   profile: '/profile',
   /** Authenticated booking request wizard after vehicle selection. */

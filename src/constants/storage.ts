@@ -10,6 +10,8 @@ export const STORAGE_KEYS = {
   sidebarState: 'sidebar_state',
   /** Customer booking city chosen from the India city selector. */
   bookingCity: 'silvercarz-booking-city',
+  /** HttpOnly flag that a password-recovery session was established. */
+  passwordRecovery: 'sc-password-recovery',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
@@ -19,3 +21,6 @@ export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 /** Booking city cookie lifetime (30 days). */
 export const BOOKING_CITY_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+
+/** Password-recovery cookie lifetime (20 minutes). */
+export const PASSWORD_RECOVERY_COOKIE_MAX_AGE = 60 * 20;

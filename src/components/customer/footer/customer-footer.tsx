@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { BrandLogo } from '@/components/shared/brand-logo';
 import { CustomerContainer } from '@/components/customer/shared/customer-container';
+import { CustomerContactLinks } from '@/components/customer/shared/customer-contact-links';
 import { appConfig, customerLegalNavItems, customerQuickLinkItems } from '@/config';
 import { ROUTES } from '@/constants/routes';
 
@@ -50,8 +51,8 @@ export function CustomerFooter() {
         </div>
 
         <div>
-          <h2 className="text-sm font-bold tracking-wide text-primary uppercase">Follow Us</h2>
-          <p className="mt-4 text-sm text-secondary-foreground/70">Social links coming soon.</p>
+          <h2 className="text-sm font-bold tracking-wide text-primary uppercase">Contact</h2>
+          <CustomerContactLinks tone="dark" className="mt-4" />
         </div>
       </CustomerContainer>
 

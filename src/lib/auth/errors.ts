@@ -19,6 +19,7 @@ export const AUTH_ERROR_CODES = {
   inactiveAccount: 'inactive_account',
   missingProfile: 'missing_profile',
   databaseSetupRequired: 'database_setup_required',
+  recoveryInvalid: 'recovery_invalid',
   unknown: ERROR_CODES.unknown,
 } as const;
 
@@ -43,6 +44,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   missing_profile: 'Your account profile is missing. Contact an administrator.',
   database_setup_required:
     'Database setup is incomplete. Apply the profiles migration in Supabase, then try again.',
+  recovery_invalid:
+    'This reset link is invalid or has expired. Request a new password reset email.',
 };
 
 const FALLBACK_MESSAGE = 'Authentication failed. Please try again.';

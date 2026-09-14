@@ -1,4 +1,5 @@
 import { PortalThemeScope } from '@/components/shared/portal-theme-scope';
+import { CustomerContactLinks } from '@/components/customer/shared/customer-contact-links';
 
 /**
  * Auth route group layout — no app shell (sidebar/header).
@@ -17,6 +18,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,var(--auth-glow),transparent_55%),linear-gradient(to_bottom,var(--auth-wash-top),var(--auth-wash-bottom))]"
       />
       {children}
+      <CustomerContactLinks className="mt-8" />
     </div>
   );
 }

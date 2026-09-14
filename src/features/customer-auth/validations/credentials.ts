@@ -14,6 +14,9 @@ import { emailSchema } from '@/validations';
 export { signInCredentialsSchema };
 export type { SignInCredentials } from '@/features/auth/validations/credentials';
 
+export { resetPasswordRequestSchema } from '@/features/auth/validations/credentials';
+export type { ResetPasswordRequest } from '@/features/auth/validations/credentials';
+
 export const customerPasswordSchema = z
   .string()
   .max(72, 'Password must be at most 72 characters.')
@@ -46,3 +49,15 @@ export const customerSignUpSchema = z
   });
 
 export type CustomerSignUpInput = z.infer<typeof customerSignUpSchema>;
+
+export const customerResetPasswordSchema = z
+  .object({
+    password: customerPasswordSchema,
+    confirmPassword: z.string().min(1, 'Confirm your password.'),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  });
+
+export type CustomerResetPasswordInput = z.infer<typeof customerResetPasswordSchema>;

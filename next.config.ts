@@ -1,7 +1,20 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
+
+const projectRoot = path.resolve(process.cwd());
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  allowedDevOrigins: ['127.0.0.1', 'localhost'],
+  // Keep Turbopack inside this repo. Inferring a parent folder (iCloud Documents)
+  // makes the first request hang forever after "Ready".
+  outputFileTracingRoot: projectRoot,
+  turbopack: {
+    root: projectRoot,
+  },
+  watchOptions: {
+    pollIntervalMs: 1000,
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
@@ -11,14 +24,25 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // iCloud Desktop/Documents: native flock on `.next/dev/lock` can hang `next dev`
+  // with no output. Skip barrel-file rewriting so the first compile does not
+  // open thousands of package files through iCloud.
   experimental: {
-    optimizePackageImports: ['lucide-react', 'date-fns', 'recharts', 'radix-ui'],
+    lockDistDir: false,
+  },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ['**/node_modules/**', '**/.git/**', '**/.next/**'],
+      };
+    }
+    return config;
   },
   async redirects() {
     return [
       // Staff auth lives under /admin/*. Customer login owns public `/login`.
-      { source: '/forgot-password', destination: '/admin/forgot-password', permanent: true },
-      { source: '/reset-password', destination: '/admin/reset-password', permanent: true },
       { source: '/dashboard', destination: '/admin/dashboard', permanent: true },
       { source: '/bookings', destination: '/admin/bookings', permanent: true },
       { source: '/bookings/:path*', destination: '/admin/bookings/:path*', permanent: true },
